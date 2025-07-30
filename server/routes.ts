@@ -199,7 +199,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid progress data", errors: validation.error.errors });
       }
 
-      const progress = await storage.createUserProgress(validation.data);
+      // Convert date strings to Date objects if needed
+      const progressData = {
+        ...validation.data,
+        lastReviewed: validation.data.lastReviewed ? new Date(validation.data.lastReviewed) : undefined,
+        nextReview: validation.data.nextReview ? new Date(validation.data.nextReview) : undefined,
+      };
+
+      const progress = await storage.createUserProgress(progressData);
       res.status(201).json(progress);
     } catch (error) {
       res.status(500).json({ message: "Failed to create progress record" });
@@ -209,7 +216,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/progress/:id", async (req, res) => {
     try {
       const updates = insertUserProgressSchema.partial().parse(req.body);
-      const progress = await storage.updateUserProgress(req.params.id, updates);
+      
+      // Convert date strings to Date objects if needed
+      const progressUpdates = {
+        ...updates,
+        lastReviewed: updates.lastReviewed ? new Date(updates.lastReviewed) : undefined,
+        nextReview: updates.nextReview ? new Date(updates.nextReview) : undefined,
+      };
+
+      const progress = await storage.updateUserProgress(req.params.id, progressUpdates);
       if (!progress) {
         return res.status(404).json({ message: "Progress record not found" });
       }

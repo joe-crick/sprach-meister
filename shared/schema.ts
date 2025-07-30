@@ -63,6 +63,9 @@ export const insertVocabularyWordSchema = createInsertSchema(vocabularyWords).om
 export const insertUserProgressSchema = createInsertSchema(userProgress).omit({
   id: true,
   createdAt: true,
+}).extend({
+  lastReviewed: z.union([z.date(), z.string()]).optional(),
+  nextReview: z.union([z.date(), z.string()]).optional(),
 });
 
 export const insertLearningSessionSchema = createInsertSchema(learningSessions).omit({
