@@ -39,6 +39,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid word data", errors: validation.error.errors });
       }
 
+      // Check for duplicate before creating
+      const existingWords = await storage.getVocabularyWords();
+      const isDuplicate = existingWords.some(w => w.german.toLowerCase() === validation.data.german.toLowerCase());
+      
+      if (isDuplicate) {
+        return res.status(400).json({ message: `Word "${validation.data.german}" already exists` });
+      }
+
       const word = await storage.createVocabularyWord(validation.data);
       res.status(201).json(word);
     } catch (error) {
@@ -83,6 +91,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete word" });
+    }
+  });
+
+  // Clean up duplicate words
+  app.post("/api/vocabulary/cleanup-duplicates", async (req, res) => {
+    try {
+      const words = await storage.getVocabularyWords();
+      const duplicateMap = new Map<string, VocabularyWord[]>();
+      
+      // Group words by lowercase German word
+      words.forEach(word => {
+        const key = word.german.toLowerCase();
+        if (!duplicateMap.has(key)) {
+          duplicateMap.set(key, []);
+        }
+        duplicateMap.get(key)!.push(word);
+      });
+      
+      let duplicatesRemoved = 0;
+      
+      // For each group with duplicates, keep the first one and delete the rest
+      for (const [germanWord, duplicates] of duplicateMap.entries()) {
+        if (duplicates.length > 1) {
+          // Sort by creation date, keep the oldest
+          duplicates.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+          
+          // Delete all but the first one
+          for (let i = 1; i < duplicates.length; i++) {
+            await storage.deleteVocabularyWord(duplicates[i].id);
+            duplicatesRemoved++;
+          }
+        }
+      }
+      
+      res.json({ message: `Cleaned up ${duplicatesRemoved} duplicate words` });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to cleanup duplicates" });
     }
   });
 
@@ -204,7 +249,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const createdWords = await storage.createVocabularyWords(validation.data);
-      res.status(201).json({ message: `${createdWords.length} words imported successfully`, words: createdWords });
+      const duplicatesSkipped = validation.data.length - createdWords.length;
+      
+      let message = `${createdWords.length} words imported successfully`;
+      if (duplicatesSkipped > 0) {
+        message += ` (${duplicatesSkipped} duplicates skipped)`;
+      }
+      
+      res.status(201).json({ message, words: createdWords });
     } catch (error) {
       res.status(500).json({ message: "Failed to process CSV file" });
     }
@@ -238,7 +290,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
 
       const createdWords = await storage.createVocabularyWords(wordsToCreate);
-      res.status(201).json({ message: `${createdWords.length} words generated and added`, words: createdWords });
+      const duplicatesSkipped = wordsToCreate.length - createdWords.length;
+      
+      let message = `${createdWords.length} words generated and added`;
+      if (duplicatesSkipped > 0) {
+        message += ` (${duplicatesSkipped} duplicates skipped)`;
+      }
+      
+      res.status(201).json({ message, words: createdWords });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate vocabulary with AI" });
     }

@@ -145,7 +145,22 @@ export class MemStorage implements IStorage {
 
   async createVocabularyWords(words: InsertVocabularyWord[]): Promise<VocabularyWord[]> {
     const createdWords: VocabularyWord[] = [];
-    for (const word of words) {
+    
+    // Filter out duplicates based on german word (case insensitive)
+    const existingWords = await this.getVocabularyWords();
+    const existingGermanWords = new Set(existingWords.map(w => w.german.toLowerCase()));
+    
+    const uniqueWords = words.filter(word => {
+      const isDuplicate = existingGermanWords.has(word.german.toLowerCase());
+      if (!isDuplicate) {
+        existingGermanWords.add(word.german.toLowerCase()); // Prevent duplicates within the same batch
+      }
+      return !isDuplicate;
+    });
+    
+    console.log(`Filtering duplicates: ${words.length} submitted, ${uniqueWords.length} unique words to add`);
+    
+    for (const word of uniqueWords) {
       createdWords.push(await this.createVocabularyWord(word));
     }
     return createdWords;
@@ -427,7 +442,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVocabularyWords(words: InsertVocabularyWord[]): Promise<VocabularyWord[]> {
-    return await db.insert(vocabularyWords).values(words).returning();
+    // Filter out duplicates based on german word (case insensitive)
+    const existingWords = await this.getVocabularyWords();
+    const existingGermanWords = new Set(existingWords.map(w => w.german.toLowerCase()));
+    
+    const uniqueWords = words.filter(word => {
+      const isDuplicate = existingGermanWords.has(word.german.toLowerCase());
+      if (!isDuplicate) {
+        existingGermanWords.add(word.german.toLowerCase()); // Prevent duplicates within the same batch
+      }
+      return !isDuplicate;
+    });
+    
+    console.log(`Filtering duplicates: ${words.length} submitted, ${uniqueWords.length} unique words to add`);
+    
+    if (uniqueWords.length === 0) {
+      return [];
+    }
+    
+    return await db.insert(vocabularyWords).values(uniqueWords).returning();
   }
 
   async updateVocabularyWord(id: string, word: Partial<VocabularyWord>): Promise<VocabularyWord | undefined> {
