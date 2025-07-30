@@ -1,29 +1,22 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VocabularyWordWithProgress } from "@shared/schema";
-import WordPresentation from "@/components/word-presentation";
-import FillInBlankExercise from "@/components/fill-in-blank-exercise";
+import InterleavedLearnExercise from "@/components/interleaved-learn-exercise";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { X, Home, CheckCircle } from "lucide-react";
+import { X, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-type LearningPhase = "loading" | "learning" | "testing" | "completed";
-
 export default function Learn() {
-  const [phase, setPhase] = useState<LearningPhase>("loading");
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStartTime] = useState(Date.now());
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalAnswers, setTotalAnswers] = useState(0);
-  
-  // Track which words have been learned and tested
-  const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
-  const [testingQueue, setTestingQueue] = useState<VocabularyWordWithProgress[]>([]);
-  const [currentTestIndex, setCurrentTestIndex] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [wordQueue, setWordQueue] = useState<VocabularyWordWithProgress[]>([]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -80,50 +73,51 @@ export default function Learn() {
     }
   });
 
-  // Create session when component mounts and we have words
+  // Create session and interleaved word queue when component mounts
   useEffect(() => {
-    if (wordsForLearning && wordsForLearning.length > 0 && !sessionId && phase === "loading") {
+    if (wordsForLearning && wordsForLearning.length > 0 && !sessionId) {
       createSessionMutation.mutate();
-      setPhase("learning");
+      
+      // Create Memrise-style interleaved queue
+      // Each word appears multiple times throughout the session
+      const interleavedQueue = createInterleavedQueue(wordsForLearning);
+      setWordQueue(interleavedQueue);
     }
-  }, [wordsForLearning, sessionId, phase]);
+  }, [wordsForLearning, sessionId]);
 
-  const handleWordLearned = () => {
-    if (!wordsForLearning) return;
+  // Create interleaved queue like Memrise: word1, word2, word3, word1, word2, word4, word1, word3, etc.
+  const createInterleavedQueue = (words: VocabularyWordWithProgress[]): VocabularyWordWithProgress[] => {
+    const queue: VocabularyWordWithProgress[] = [];
+    const wordsToRepeat = [...words];
     
-    const currentWord = wordsForLearning[currentWordIndex];
-    const newLearnedWords = new Set(learnedWords);
-    newLearnedWords.add(currentWord.id);
-    setLearnedWords(newLearnedWords);
+    // First round: introduce all words once
+    queue.push(...wordsToRepeat);
     
-    if (currentWordIndex < wordsForLearning.length - 1) {
-      setCurrentWordIndex(currentWordIndex + 1);
-    } else {
-      // All words learned, start testing phase
-      // Create testing queue with each word appearing 3 times
-      const testQueue: VocabularyWordWithProgress[] = [];
-      wordsForLearning.forEach(word => {
-        for (let i = 0; i < 3; i++) {
-          testQueue.push(word);
-        }
+    // Subsequent rounds: repeat words with increasing intervals
+    // Each word appears 4 times total (initial + 3 reviews)
+    for (let round = 1; round <= 3; round++) {
+      // Insert words at intervals based on round number
+      const interval = Math.max(2, Math.floor(words.length / (round + 1)));
+      
+      wordsToRepeat.forEach((word, index) => {
+        const insertPosition = queue.length - Math.floor(words.length * (4 - round) / 4) + (index * interval);
+        const safePosition = Math.min(insertPosition, queue.length);
+        queue.splice(safePosition, 0, word);
       });
-      // Shuffle the testing queue
-      const shuffledQueue = testQueue.sort(() => Math.random() - 0.5);
-      setTestingQueue(shuffledQueue);
-      setCurrentTestIndex(0);
-      setPhase("testing");
     }
+    
+    return queue;
   };
 
-  const handleTestAnswer = (correct: boolean, userAnswer: string) => {
+  const handleAnswer = (correct: boolean, userAnswer: string) => {
     const newCorrectAnswers = correct ? correctAnswers + 1 : correctAnswers;
     const newTotalAnswers = totalAnswers + 1;
     
     setCorrectAnswers(newCorrectAnswers);
     setTotalAnswers(newTotalAnswers);
 
-    if (testingQueue.length > 0) {
-      const currentWord = testingQueue[currentTestIndex];
+    if (wordQueue.length > 0) {
+      const currentWord = wordQueue[currentWordIndex];
       createProgressMutation.mutate({ 
         wordId: currentWord.id, 
         correct 
@@ -131,12 +125,12 @@ export default function Learn() {
     }
   };
 
-  const handleTestNext = () => {
-    if (currentTestIndex < testingQueue.length - 1) {
-      setCurrentTestIndex(currentTestIndex + 1);
+  const handleNext = () => {
+    if (currentWordIndex < wordQueue.length - 1) {
+      setCurrentWordIndex(currentWordIndex + 1);
     } else {
-      // Testing completed
-      const duration = Math.round((Date.now() - sessionStartTime) / 60000); // minutes
+      // Session completed
+      const duration = Math.round((Date.now() - sessionStartTime) / 60000);
       updateSessionMutation.mutate({
         correctAnswers,
         totalAnswers,
@@ -144,7 +138,7 @@ export default function Learn() {
         completed: true
       });
       
-      setPhase("completed");
+      setIsCompleted(true);
       
       toast({
         title: "Session Complete!",
@@ -157,7 +151,7 @@ export default function Learn() {
 
 
 
-  if (isLoading) {
+  if (isLoading || wordQueue.length === 0) {
     return (
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
@@ -207,97 +201,8 @@ export default function Learn() {
     }
   };
 
-  // Learning phase
-  if (phase === "learning") {
-    const currentWord = wordsForLearning[currentWordIndex];
-    const progress = ((currentWordIndex + 1) / wordsForLearning.length) * 100;
-
-    return (
-      <div className="flex-1 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            {/* Session Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-4">
-                <Link href="/" onClick={handleExit}>
-                  <Button variant="ghost" size="sm">
-                    <X className="h-5 w-5" />
-                  </Button>
-                </Link>
-                <div className="text-sm text-gray-600">
-                  Learning Phase
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                {correctAnswers}/{totalAnswers} correct
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <Progress value={progress} className="progress-bar" />
-            </div>
-
-            {/* Word Presentation */}
-            <WordPresentation 
-              word={currentWord} 
-              onContinue={handleWordLearned}
-              wordNumber={currentWordIndex + 1}
-              totalWords={wordsForLearning.length}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Testing phase
-  if (phase === "testing") {
-    const currentWord = testingQueue[currentTestIndex];
-    const progress = ((currentTestIndex + 1) / testingQueue.length) * 100;
-
-    return (
-      <div className="flex-1 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            {/* Session Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-4">
-                <Link href="/" onClick={handleExit}>
-                  <Button variant="ghost" size="sm">
-                    <X className="h-5 w-5" />
-                  </Button>
-                </Link>
-                <div className="text-sm text-gray-600">
-                  Testing Phase
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                {correctAnswers}/{totalAnswers} correct
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <Progress value={progress} className="progress-bar" />
-            </div>
-
-            {/* Fill-in-Blank Exercise */}
-            <FillInBlankExercise 
-              word={currentWord} 
-              onAnswer={handleTestAnswer}
-              onNext={handleTestNext}
-              exerciseNumber={currentTestIndex + 1}
-              totalExercises={testingQueue.length}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Completion phase
-  if (phase === "completed") {
+  // Session completed
+  if (isCompleted) {
     const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
     
     return (
@@ -309,7 +214,7 @@ export default function Learn() {
               Session Complete!
             </h2>
             <div className="text-lg text-gray-600 mb-6">
-              You completed {wordsForLearning.length} words with {accuracy}% accuracy.
+              You completed {wordsForLearning?.length || 0} words with {accuracy}% accuracy.
             </div>
             <div className="grid grid-cols-2 gap-4 mb-8 max-w-md mx-auto">
               <div className="bg-green-50 p-4 rounded-lg">
@@ -335,15 +240,44 @@ export default function Learn() {
     );
   }
 
-  // Loading state (fallback)
+  // Main learning interface with interleaved exercises
+  const currentWord = wordQueue[currentWordIndex];
+  const progress = ((currentWordIndex + 1) / wordQueue.length) * 100;
+
   return (
     <div className="flex-1 p-6">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+          {/* Session Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <Link href="/" onClick={handleExit}>
+                <Button variant="ghost" size="sm">
+                  <X className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div className="text-sm text-gray-600">
+                Interleaved Learning
+              </div>
+            </div>
+            <div className="text-sm text-gray-600">
+              {correctAnswers}/{totalAnswers} correct
+            </div>
           </div>
+
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <Progress value={progress} className="progress-bar" />
+          </div>
+
+          {/* Interleaved Exercise */}
+          <InterleavedLearnExercise 
+            word={currentWord} 
+            onAnswer={handleAnswer}
+            onNext={handleNext}
+            exerciseNumber={currentWordIndex + 1}
+            totalExercises={wordQueue.length}
+          />
         </div>
       </div>
     </div>
