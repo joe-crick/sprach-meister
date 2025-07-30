@@ -56,13 +56,14 @@ export const userSettings = pgTable("user_settings", {
 });
 
 // Insert schemas
-export const insertVocabularyWordSchema = createInsertSchema(vocabularyWords).omit({
-  id: true,
-  createdAt: true,
-}).extend({
-  article: z.string().optional(),
-  wordType: z.enum(["noun", "verb", "adjective", "adverb", "expression", "phrase", "other"]).default("noun"),
-});
+export const insertVocabularyWordSchema = createInsertSchema(vocabularyWords)
+  .omit({
+    id: true,
+    createdAt: true,
+  })
+  .extend({
+    wordType: z.enum(["noun", "verb", "adjective", "adverb", "expression", "phrase", "other"]).default("noun"),
+  });
 
 export const insertUserProgressSchema = createInsertSchema(userProgress).omit({
   id: true,

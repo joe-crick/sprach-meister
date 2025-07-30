@@ -159,10 +159,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const words = parsed.data.map((row: any) => {
-        // Clean up article field - treat "-", "none", or empty as null
-        let article = row.article || row.Article || null;
-        if (article === "-" || article === "none" || article === "") {
-          article = null;
+        // Clean up article field - treat "-", "none", or empty as undefined
+        let article = row.article || row.Article;
+        if (article === "-" || article === "none" || article === "" || !article) {
+          article = undefined;
         }
         
         // Determine word type - if no article or article is "-", default to verb
@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           german: row.german || row.German,
-          article: article,
+          article: article, // Already converted to undefined above
           english: row.english || row.English,
           category: row.category || row.Category || "Other",
           wordType: wordType,
