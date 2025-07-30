@@ -158,16 +158,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "CSV parsing error", errors: parsed.errors });
       }
 
-      const words = parsed.data.map((row: any) => ({
-        german: row.german || row.German,
-        article: row.article || row.Article || null,
-        english: row.english || row.English,
-        category: row.category || row.Category || "Other",
-        wordType: row.wordType || row["Word Type"] || row.type || "noun",
-        exampleSentence: row.exampleSentence || row["Example Sentence"] || "",
-        exampleTranslation: row.exampleTranslation || row["Example Translation"] || "",
-        memoryTip: row.memoryTip || row["Memory Tip"] || ""
-      }));
+      const words = parsed.data.map((row: any) => {
+        // Clean up article field - treat "-", "none", or empty as null
+        let article = row.article || row.Article || null;
+        if (article === "-" || article === "none" || article === "") {
+          article = null;
+        }
+        
+        // Determine word type - if no article or article is "-", default to verb
+        let wordType = row.wordType || row["Word Type"] || row.type;
+        if (!wordType) {
+          // Auto-detect based on article presence
+          wordType = (article && ["der", "die", "das"].includes(article)) ? "noun" : "verb";
+        }
+        
+        return {
+          german: row.german || row.German,
+          article: article,
+          english: row.english || row.English,
+          category: row.category || row.Category || "Other",
+          wordType: wordType,
+          exampleSentence: row.exampleSentence || row["Example Sentence"] || "",
+          exampleTranslation: row.exampleTranslation || row["Example Translation"] || "",
+          memoryTip: row.memoryTip || row["Memory Tip"] || ""
+        };
+      });
+
+      // Validate each word
+      for (const word of words) {
+        if (!word.german || !word.english) {
+          return res.status(400).json({ message: "Each row must have 'german' and 'english' fields" });
+        }
+        
+        // Validate that nouns have articles
+        if (word.wordType === "noun" && !word.article) {
+          return res.status(400).json({ 
+            message: `Word "${word.german}" is marked as a noun but has no article. Please provide der/die/das or change wordType.` 
+          });
+        }
+      }
 
       const validation = z.array(insertVocabularyWordSchema).safeParse(words);
       if (!validation.success) {
