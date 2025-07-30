@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(239, 84%, 67%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(142, 71%, 45%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Gender-specific colors */
+  --der-blue: hsl(217, 91%, 60%);
+  --die-green: hsl(142, 71%, 45%);
+  --das-purple: hsl(262, 83%, 58%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(239, 84%, 67%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(142, 71%, 45%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  
+  /* Gender-specific colors for dark mode */
+  --der-blue: hsl(217, 91%, 65%);
+  --die-green: hsl(142, 71%, 50%);
+  --das-purple: hsl(262, 83%, 63%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom utility classes for gender colors */
+.text-der-blue {
+  color: var(--der-blue);
+}
+
+.text-die-green {
+  color: var(--die-green);
+}
+
+.text-das-purple {
+  color: var(--das-purple);
+}
+
+.bg-der-blue {
+  background-color: var(--der-blue);
+}
+
+.bg-die-green {
+  background-color: var(--die-green);
+}
+
+.bg-das-purple {
+  background-color: var(--das-purple);
+}
+
+.border-der-blue {
+  border-color: var(--der-blue);
+}
+
+.border-die-green {
+  border-color: var(--die-green);
+}
+
+.border-das-purple {
+  border-color: var(--das-purple);
+}
+
+.hover\:bg-der-blue:hover {
+  background-color: var(--der-blue);
+}
+
+.hover\:bg-die-green:hover {
+  background-color: var(--die-green);
+}
+
+.hover\:bg-das-purple:hover {
+  background-color: var(--das-purple);
+}
+
+/* Custom classes for learning interface */
+.vocabulary-highlight {
+  @apply font-bold px-2 py-1 rounded;
+}
+
+.vocabulary-highlight.der {
+  @apply bg-der-blue text-white;
+}
+
+.vocabulary-highlight.die {
+  @apply bg-die-green text-white;
+}
+
+.vocabulary-highlight.das {
+  @apply bg-das-purple text-white;
+}
+
+/* Progress bar animations */
+.progress-bar {
+  transition: width 0.6s ease-in-out;
+}
+
+/* Gender badge styles */
+.gender-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white;
+}
+
+.gender-badge.der {
+  @apply bg-der-blue;
+}
+
+.gender-badge.die {
+  @apply bg-die-green;
+}
+
+.gender-badge.das {
+  @apply bg-das-purple;
+}
+
+/* Answer option styles */
+.answer-option {
+  @apply transition-all duration-200;
+}
+
+.answer-option:hover {
+  @apply transform scale-105;
+}
+
+.answer-option.correct {
+  @apply border-green-500 bg-green-50 dark:bg-green-900/20;
+}
+
+.answer-option.incorrect {
+  @apply border-red-500 bg-red-50 dark:bg-red-900/20;
+}
+
+/* Sidebar animations */
+.sidebar-link {
+  @apply transition-all duration-200;
+}
+
+.sidebar-link:hover {
+  @apply transform translate-x-1;
+}
