@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Brain, RotateCcw, TrendingUp, Book, Settings } from "lucide-react";
+import { Home, Brain, RotateCcw, TrendingUp, Book, FileText, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -8,6 +8,7 @@ const navigation = [
   { name: "Review", href: "/review", icon: RotateCcw },
   { name: "Progress", href: "/progress", icon: TrendingUp },
   { name: "Vocabulary", href: "/vocabulary", icon: Book },
+  { name: "Verbs", href: "/verbs", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

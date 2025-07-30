@@ -9,6 +9,7 @@ import Learn from "@/pages/learn";
 import Review from "@/pages/review";
 import Progress from "@/pages/progress";
 import Vocabulary from "@/pages/vocabulary";
+import Verbs from "@/pages/verbs";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/review" component={Review} />
       <Route path="/progress" component={Progress} />
       <Route path="/vocabulary" component={Vocabulary} />
+      <Route path="/verbs" component={Verbs} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
