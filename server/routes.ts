@@ -117,9 +117,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const category = req.query.category as string;
       
       // Get all words with progress, not just due ones
-      const allWords = await storage.getAllVocabularyWords();
+      const allWords = await storage.getVocabularyWords();
       const wordsWithProgress = await Promise.all(
-        allWords.map(async (word) => {
+        allWords.map(async (word: any) => {
           const progress = await storage.getUserProgressForWord(userId, word.id);
           return { ...word, progress };
         })
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by category if specified
       let filteredWords = wordsWithProgress;
       if (category && category !== "all") {
-        filteredWords = wordsWithProgress.filter(word => word.category === category);
+        filteredWords = wordsWithProgress.filter((word: any) => word.category === category);
       }
 
       // Shuffle and limit
@@ -160,9 +160,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const words = parsed.data.map((row: any) => ({
         german: row.german || row.German,
-        article: row.article || row.Article,
+        article: row.article || row.Article || null,
         english: row.english || row.English,
         category: row.category || row.Category || "Other",
+        wordType: row.wordType || row["Word Type"] || row.type || "noun",
         exampleSentence: row.exampleSentence || row["Example Sentence"] || "",
         exampleTranslation: row.exampleTranslation || row["Example Translation"] || "",
         memoryTip: row.memoryTip || row["Memory Tip"] || ""
@@ -201,6 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         article: word.article,
         english: word.english,
         category: word.category,
+        wordType: "noun" as const,
         exampleSentence: word.exampleSentence,
         exampleTranslation: word.exampleTranslation,
         memoryTip: word.memoryTip

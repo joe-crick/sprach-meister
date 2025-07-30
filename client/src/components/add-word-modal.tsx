@@ -21,6 +21,7 @@ export default function AddWordModal({ open, onClose }: AddWordModalProps) {
     article: "",
     english: "",
     category: "Other",
+    wordType: "noun",
     exampleSentence: "",
     exampleTranslation: "",
     memoryTip: "",
@@ -60,6 +61,7 @@ export default function AddWordModal({ open, onClose }: AddWordModalProps) {
       article: "",
       english: "",
       category: "Other",
+      wordType: "noun",
       exampleSentence: "",
       exampleTranslation: "",
       memoryTip: "",
@@ -69,10 +71,18 @@ export default function AddWordModal({ open, onClose }: AddWordModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.german || !formData.article || !formData.english) {
+    if (!formData.german || !formData.english) {
       toast({
         title: "Error",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (formData.wordType === "noun" && !formData.article) {
+      toast({
+        title: "Error",
+        description: "Please select an article for nouns.",
         variant: "destructive",
       });
       return;
@@ -105,22 +115,46 @@ export default function AddWordModal({ open, onClose }: AddWordModalProps) {
           </div>
 
           <div>
-            <Label htmlFor="article">Article/Gender *</Label>
+            <Label htmlFor="wordType">Word Type *</Label>
             <Select 
-              value={formData.article} 
-              onValueChange={(value) => setFormData({ ...formData, article: value })}
+              value={formData.wordType} 
+              onValueChange={(value) => setFormData({ ...formData, wordType: value, article: value === "noun" ? formData.article : "" })}
               required
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select gender" />
+                <SelectValue placeholder="Select word type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="der">der (masculine)</SelectItem>
-                <SelectItem value="die">die (feminine)</SelectItem>
-                <SelectItem value="das">das (neuter)</SelectItem>
+                <SelectItem value="noun">Noun</SelectItem>
+                <SelectItem value="verb">Verb</SelectItem>
+                <SelectItem value="adjective">Adjective</SelectItem>
+                <SelectItem value="adverb">Adverb</SelectItem>
+                <SelectItem value="expression">Expression</SelectItem>
+                <SelectItem value="phrase">Phrase</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {formData.wordType === "noun" && (
+            <div>
+              <Label htmlFor="article">Article/Gender *</Label>
+              <Select 
+                value={formData.article} 
+                onValueChange={(value) => setFormData({ ...formData, article: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="der">der (masculine)</SelectItem>
+                  <SelectItem value="die">die (feminine)</SelectItem>
+                  <SelectItem value="das">das (neuter)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="english">English Translation *</Label>

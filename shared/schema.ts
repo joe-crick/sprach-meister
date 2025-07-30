@@ -6,9 +6,10 @@ import { z } from "zod";
 export const vocabularyWords = pgTable("vocabulary_words", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   german: text("german").notNull(),
-  article: text("article").notNull(), // der, die, das
+  article: text("article"), // der, die, das (optional for non-nouns)
   english: text("english").notNull(),
   category: text("category").notNull(),
+  wordType: text("word_type").default("noun"), // noun, verb, adjective, expression, etc.
   exampleSentence: text("example_sentence"),
   exampleTranslation: text("example_translation"),
   memoryTip: text("memory_tip"),
@@ -58,6 +59,9 @@ export const userSettings = pgTable("user_settings", {
 export const insertVocabularyWordSchema = createInsertSchema(vocabularyWords).omit({
   id: true,
   createdAt: true,
+}).extend({
+  article: z.string().optional(),
+  wordType: z.enum(["noun", "verb", "adjective", "adverb", "expression", "phrase", "other"]).default("noun"),
 });
 
 export const insertUserProgressSchema = createInsertSchema(userProgress).omit({
