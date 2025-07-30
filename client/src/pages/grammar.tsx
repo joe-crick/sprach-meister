@@ -13,18 +13,18 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 
 const GRAMMAR_TOPICS = [
-  { id: "articles", name: "Articles (der, die, das)", level: "A1" },
-  { id: "cases", name: "Cases (Nominative, Accusative, Dative, Genitive)", level: "A2" },
-  { id: "verb_conjugation", name: "Verb Conjugation", level: "A1" },
-  { id: "word_order", name: "Word Order", level: "A2" },
   { id: "adjective_endings", name: "Adjective Endings", level: "B1" },
-  { id: "modal_verbs", name: "Modal Verbs", level: "A2" },
-  { id: "perfect_tense", name: "Perfect Tense", level: "A2" },
   { id: "subjunctive", name: "Subjunctive (Konjunktiv)", level: "B1" },
   { id: "passive_voice", name: "Passive Voice", level: "B1" },
   { id: "relative_clauses", name: "Relative Clauses", level: "B1" },
-  { id: "prepositions", name: "Prepositions", level: "A2" },
-  { id: "separable_verbs", name: "Separable Verbs", level: "A2" }
+  { id: "indirect_speech", name: "Indirect Speech", level: "B1" },
+  { id: "conditional_sentences", name: "Conditional Sentences", level: "B1" },
+  { id: "modal_particles", name: "Modal Particles", level: "B1" },
+  { id: "word_formation", name: "Word Formation", level: "B1" },
+  { id: "reflexive_verbs", name: "Reflexive Verbs (Advanced)", level: "B1" },
+  { id: "temporal_expressions", name: "Temporal Expressions", level: "B1" },
+  { id: "complex_sentence_structure", name: "Complex Sentence Structure", level: "B1" },
+  { id: "participial_constructions", name: "Participial Constructions", level: "B1" }
 ];
 
 interface GrammarExplanation {
@@ -46,6 +46,7 @@ interface AIFeedback {
 export default function Grammar() {
   const { toast } = useToast();
   const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [customTopic, setCustomTopic] = useState<string>("");
   const [explanation, setExplanation] = useState<string>("");
   const [examples, setExamples] = useState<string[]>(["", "", ""]);
   const [rules, setRules] = useState<string[]>(["", ""]);
@@ -114,17 +115,19 @@ export default function Grammar() {
   };
 
   const handleSubmit = () => {
-    if (!selectedTopic || !explanation.trim()) {
+    const topicToUse = selectedTopic === "custom" ? customTopic.trim() : selectedTopic;
+    
+    if (!topicToUse || !explanation.trim()) {
       toast({
         title: "Missing information",
-        description: "Please select a topic and provide an explanation.",
+        description: "Please select a topic (or enter a custom one) and provide an explanation.",
         variant: "destructive",
       });
       return;
     }
 
     const grammarData: GrammarExplanation = {
-      topic: selectedTopic,
+      topic: topicToUse,
       explanation: explanation.trim(),
       examples: examples.filter(ex => ex.trim() !== ""),
       rules: rules.filter(rule => rule.trim() !== "")
@@ -135,6 +138,7 @@ export default function Grammar() {
 
   const resetForm = () => {
     setSelectedTopic("");
+    setCustomTopic("");
     setExplanation("");
     setExamples(["", "", ""]);
     setRules(["", ""]);
@@ -202,8 +206,25 @@ export default function Grammar() {
                           </div>
                         </SelectItem>
                       ))}
+                      <SelectItem value="custom">
+                        <div className="flex items-center gap-2">
+                          <span>🆕 Enter Custom Topic</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  {selectedTopic === "custom" && (
+                    <div className="mt-3">
+                      <Label htmlFor="customTopic">Enter your grammar topic:</Label>
+                      <Input
+                        id="customTopic"
+                        value={customTopic}
+                        onChange={(e) => setCustomTopic(e.target.value)}
+                        placeholder="e.g., Genitive Case, Reflexive Pronouns, etc."
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
                   {selectedTopic && (
                     <div className="mt-2 p-3 bg-blue-50 rounded-lg">
                       <p className="text-sm text-blue-800">

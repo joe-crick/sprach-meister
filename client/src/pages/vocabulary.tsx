@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { VocabularyWordWithProgress } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Upload, Brain, Search, Edit } from "lucide-react";
+import { Plus, Upload, Brain, Search, Edit, PlayCircle, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AddWordModal from "@/components/add-word-modal";
 import { generateVocabulary, processCsvFile } from "@/lib/openai";
@@ -24,6 +25,7 @@ export default function Vocabulary() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const { data: vocabulary, isLoading } = useQuery<VocabularyWordWithProgress[]>({
     queryKey: ["/api/vocabulary"],
@@ -289,6 +291,37 @@ export default function Vocabulary() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Continue Learning Section */}
+        {filteredVocabulary.length > 0 && (
+          <Card className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-center sm:text-left">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Learn?</h3>
+                  <p className="text-gray-600">You have {filteredVocabulary.length} words in your vocabulary. Start practicing!</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => navigate("/learn")}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Start Learning
+                  </Button>
+                  <Button 
+                    onClick={() => navigate("/review")}
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Review Words
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Vocabulary Table */}
         <Card>
