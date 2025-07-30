@@ -40,7 +40,17 @@ export async function processCsvFile(file: File): Promise<{ success: boolean; me
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || "Failed to process CSV file");
+      
+      // Format detailed error message for display
+      let fullMessage = error.message || "Failed to upload CSV";
+      if (error.details) {
+        fullMessage += `\n\n${error.details}`;
+      }
+      if (error.errors && error.errors.length > 0) {
+        fullMessage += `\n\n${error.errors.join('\n')}`;
+      }
+      
+      throw new Error(fullMessage);
     }
 
     const data = await response.json();

@@ -350,7 +350,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({ message, words: createdWords });
     } catch (error) {
-      res.status(500).json({ message: "Failed to process CSV file" });
+      console.error('CSV upload error:', error);
+      res.status(500).json({ 
+        message: "Failed to process CSV file",
+        details: "An unexpected error occurred while processing your CSV file. Please check the file format and try again."
+      });
     }
   });
 
