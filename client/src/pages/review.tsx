@@ -5,7 +5,7 @@ import ReviewExercise from "@/components/review-exercise";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { X } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { calculateNextReview, getNextReviewDate, getQualityFromAccuracy } from "@/lib/spaced-repetition";
@@ -20,11 +20,16 @@ export default function Review() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [location] = useLocation();
+  
+  // Check if we're in "all words" mode
+  const isAllWordsMode = location.includes("mode=all");
 
   const { data: wordsForReview, isLoading } = useQuery<VocabularyWordWithProgress[]>({
-    queryKey: ["/api/words/for-review"],
+    queryKey: [isAllWordsMode ? "/api/all-words/for-review" : "/api/words/for-review"],
     queryFn: async () => {
-      const response = await fetch("/api/words/for-review?limit=25", { credentials: "include" });
+      const endpoint = isAllWordsMode ? "/api/vocabulary/all-words-for-review" : "/api/words/for-review";
+      const response = await fetch(`${endpoint}?limit=25`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for review");
       return response.json();
     },
@@ -171,7 +176,10 @@ export default function Review() {
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">No Words Due for Review</h2>
             <p className="text-gray-600 mb-6">
-              Excellent! You're all caught up with your reviews. Come back later or start learning new words.
+              {isAllWordsMode 
+                ? "No words available for practice. Add some vocabulary first!"
+                : "Excellent! You're all caught up with your reviews. Come back later or start learning new words."
+              }
             </p>
             <div className="space-x-4">
               <Link href="/learn">
@@ -207,7 +215,7 @@ export default function Review() {
               </div>
             </div>
             <div className="text-sm text-gray-600">
-              Review Session
+              {isAllWordsMode ? "Practice Session" : "Review Session"}
             </div>
           </div>
 

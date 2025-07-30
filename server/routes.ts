@@ -109,6 +109,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // All words review (not just due words)
+  app.get("/api/vocabulary/all-words-for-review", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      const limit = parseInt(req.query.limit as string) || 50;
+      const category = req.query.category as string;
+      
+      // Get all words with progress, not just due ones
+      const allWords = await storage.getAllVocabularyWords();
+      const wordsWithProgress = await Promise.all(
+        allWords.map(async (word) => {
+          const progress = await storage.getUserProgressForWord(userId, word.id);
+          return { ...word, progress };
+        })
+      );
+
+      // Filter by category if specified
+      let filteredWords = wordsWithProgress;
+      if (category && category !== "all") {
+        filteredWords = wordsWithProgress.filter(word => word.category === category);
+      }
+
+      // Shuffle and limit
+      const shuffled = filteredWords.sort(() => 0.5 - Math.random());
+      const limitedWords = shuffled.slice(0, limit);
+
+      res.json(limitedWords);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch words for review" });
+    }
+  });
+
   // CSV upload route
   app.post("/api/vocabulary/upload-csv", upload.single("file"), async (req, res) => {
     try {

@@ -315,7 +315,15 @@ export default function Vocabulary() {
                     className="border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
                     <BookOpen className="mr-2 h-4 w-4" />
-                    Review Words
+                    Review Due Words
+                  </Button>
+                  <Button 
+                    onClick={() => navigate("/review?mode=all")}
+                    variant="outline"
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Practice All Words
                   </Button>
                 </div>
               </div>

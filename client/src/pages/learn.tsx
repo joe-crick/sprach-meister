@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VocabularyWordWithProgress } from "@shared/schema";
-import VocabularyCard from "@/components/vocabulary-card";
+import LearnExercise from "@/components/learn-exercise";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { X, Home } from "lucide-react";
@@ -13,6 +13,8 @@ export default function Learn() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStartTime] = useState(Date.now());
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [totalAnswers, setTotalAnswers] = useState(0);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -41,17 +43,17 @@ export default function Learn() {
   });
 
   const createProgressMutation = useMutation({
-    mutationFn: async (wordId: string) => {
+    mutationFn: async ({ wordId, correct }: { wordId: string; correct: boolean }) => {
       const response = await apiRequest("POST", "/api/progress", {
         wordId,
         userId: "default_user",
         level: 1,
-        correctCount: 1,
-        incorrectCount: 0,
+        correctCount: correct ? 1 : 0,
+        incorrectCount: correct ? 0 : 1,
         lastReviewed: new Date().toISOString(),
-        nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 1 day
-        easeFactor: 250,
-        interval: 1
+        nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)).toISOString(), // 1 day if correct, 12 hours if incorrect
+        easeFactor: correct ? 250 : 200,
+        interval: correct ? 1 : 0
       });
       return response.json();
     }
@@ -76,13 +78,23 @@ export default function Learn() {
     }
   }, [wordsForLearning]);
 
-  const handleContinue = async () => {
+  const handleAnswer = async (correct: boolean, selectedAnswer: string) => {
     if (!wordsForLearning) return;
+
+    const newTotalAnswers = totalAnswers + 1;
+    const newCorrectAnswers = correct ? correctAnswers + 1 : correctAnswers;
+    
+    setTotalAnswers(newTotalAnswers);
+    setCorrectAnswers(newCorrectAnswers);
 
     const currentWord = wordsForLearning[currentWordIndex];
     
     // Create progress record for this word
-    await createProgressMutation.mutateAsync(currentWord.id);
+    await createProgressMutation.mutateAsync({ wordId: currentWord.id, correct });
+  };
+
+  const handleNext = async () => {
+    if (!wordsForLearning) return;
 
     if (currentWordIndex < wordsForLearning.length - 1) {
       setCurrentWordIndex(currentWordIndex + 1);
@@ -92,13 +104,13 @@ export default function Learn() {
       await updateSessionMutation.mutateAsync({
         completed: true,
         duration,
-        correctAnswers: wordsForLearning.length,
-        totalAnswers: wordsForLearning.length
+        correctAnswers,
+        totalAnswers
       });
 
       toast({
         title: "Session Complete!",
-        description: `You've learned ${wordsForLearning.length} new words. Great job!`,
+        description: `You completed ${wordsForLearning.length} words with ${Math.round((correctAnswers/totalAnswers) * 100)}% accuracy. Great job!`,
       });
 
       // Redirect to dashboard after a short delay
@@ -114,8 +126,8 @@ export default function Learn() {
       await updateSessionMutation.mutateAsync({
         completed: false,
         duration,
-        correctAnswers: currentWordIndex,
-        totalAnswers: currentWordIndex
+        correctAnswers,
+        totalAnswers
       });
     }
   };
@@ -187,10 +199,11 @@ export default function Learn() {
             <Progress value={progress} className="progress-bar" />
           </div>
 
-          {/* Vocabulary Card */}
-          <VocabularyCard 
+          {/* Learning Exercise */}
+          <LearnExercise 
             word={currentWord} 
-            onContinue={handleContinue}
+            onAnswer={handleAnswer}
+            onNext={handleNext}
           />
         </div>
       </div>

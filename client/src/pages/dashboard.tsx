@@ -118,11 +118,11 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
             <CardContent className="p-6">
               <h3 className="text-xl font-semibold mb-2">Learn New Words</h3>
-              <p className="text-blue-100 mb-4">Discover new vocabulary words in context</p>
+              <p className="text-blue-100 mb-4">Interactive learning with fill-in-the-blank exercises</p>
               <Link href="/learn">
                 <Button className="bg-white text-primary hover:bg-blue-50">
                   Start Learning
@@ -133,11 +133,23 @@ export default function Dashboard() {
 
           <Card className="bg-gradient-to-r from-secondary to-green-600 text-white">
             <CardContent className="p-6">
-              <h3 className="text-xl font-semibold mb-2">Review Session</h3>
-              <p className="text-green-100 mb-4">Practice words that need reinforcement</p>
+              <h3 className="text-xl font-semibold mb-2">Review Due Words</h3>
+              <p className="text-green-100 mb-4">Practice words scheduled for review</p>
               <Link href="/review">
                 <Button className="bg-white text-secondary hover:bg-green-50">
                   Start Review
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold mb-2">Practice All Words</h3>
+              <p className="text-purple-100 mb-4">Review any words whenever you want</p>
+              <Link href="/review?mode=all">
+                <Button className="bg-white text-purple-600 hover:bg-purple-50">
+                  Start Practice
                 </Button>
               </Link>
             </CardContent>
