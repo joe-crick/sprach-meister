@@ -18,8 +18,8 @@ import { GermanWordAudioButton } from "@/components/audio-button";
 export default function Vocabulary() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [genderFilter, setGenderFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,8 +168,8 @@ export default function Vocabulary() {
       word.german.toLowerCase().includes(searchTerm.toLowerCase()) ||
       word.english.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesGender = genderFilter === "" || word.article === genderFilter;
-    const matchesCategory = categoryFilter === "" || word.category === categoryFilter;
+    const matchesGender = genderFilter === "all" || word.article === genderFilter;
+    const matchesCategory = categoryFilter === "all" || word.category === categoryFilter;
     
     return matchesSearch && matchesGender && matchesCategory;
   }) || [];
@@ -270,7 +270,7 @@ export default function Vocabulary() {
                   <SelectValue placeholder="All Genders" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Genders</SelectItem>
+                  <SelectItem value="all">All Genders</SelectItem>
                   <SelectItem value="der">der (masculine)</SelectItem>
                   <SelectItem value="die">die (feminine)</SelectItem>
                   <SelectItem value="das">das (neuter)</SelectItem>
@@ -282,7 +282,7 @@ export default function Vocabulary() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
