@@ -82,10 +82,11 @@ export default function Learn() {
 
   // Create session when component mounts and we have words
   useEffect(() => {
-    if (wordsForLearning && wordsForLearning.length > 0 && !sessionId) {
+    if (wordsForLearning && wordsForLearning.length > 0 && !sessionId && phase === "loading") {
       createSessionMutation.mutate();
+      setPhase("learning");
     }
-  }, [wordsForLearning]);
+  }, [wordsForLearning, sessionId, phase]);
 
   const handleWordLearned = () => {
     if (!wordsForLearning) return;
