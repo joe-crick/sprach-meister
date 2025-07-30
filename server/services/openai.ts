@@ -109,3 +109,79 @@ export async function generateMemoryTip(german: string, article: string, english
     return "Remember to practice this word regularly!";
   }
 }
+
+export interface GrammarExplanation {
+  topic: string;
+  explanation: string;
+  examples: string[];
+  rules: string[];
+}
+
+export interface AIGrammarFeedback {
+  isCorrect: boolean;
+  accuracy: number; // 0-100
+  feedback: string;
+  corrections: string[];
+  additionalInfo: string;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+}
+
+export async function validateGrammarExplanation(explanation: GrammarExplanation): Promise<AIGrammarFeedback> {
+  try {
+    const prompt = `As a German language expert and teacher, evaluate this student's explanation of a German grammar concept.
+
+Topic: ${explanation.topic}
+Explanation: ${explanation.explanation}
+Examples provided: ${explanation.examples.join('; ')}
+Rules provided: ${explanation.rules.join('; ')}
+
+Please evaluate the explanation for:
+1. Accuracy of grammar information
+2. Completeness of explanation
+3. Quality of examples
+4. Clarity and pedagogical value
+5. Any missing important information
+
+Provide detailed feedback and assign a grade (A-F). Be constructive and educational.
+
+Respond with JSON in this exact format:
+{
+  "isCorrect": boolean,
+  "accuracy": number (0-100),
+  "feedback": "detailed assessment of the explanation",
+  "corrections": ["correction 1", "correction 2"],
+  "additionalInfo": "supplementary information or teaching points",
+  "grade": "A|B|C|D|F"
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert German language teacher and linguist. Evaluate grammar explanations thoroughly and provide constructive, educational feedback. Be fair but thorough in your assessment."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3 // Lower temperature for more consistent grading
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    return {
+      isCorrect: result.isCorrect || false,
+      accuracy: Math.max(0, Math.min(100, result.accuracy || 0)),
+      feedback: result.feedback || "Unable to provide feedback at this time.",
+      corrections: Array.isArray(result.corrections) ? result.corrections : [],
+      additionalInfo: result.additionalInfo || "",
+      grade: ['A', 'B', 'C', 'D', 'F'].includes(result.grade) ? result.grade : 'F'
+    };
+  } catch (error) {
+    console.error("Error validating grammar explanation:", error);
+    throw new Error("Failed to validate grammar explanation using AI");
+  }
+}

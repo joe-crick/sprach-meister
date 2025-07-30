@@ -46,14 +46,19 @@ Preferred communication style: Simple, everyday language.
 - **Dashboard**: Overview with statistics and recent activity
 - **Learning Modes**: Separate pages for learning new words and reviewing
 - **Vocabulary Management**: CRUD operations with search and filtering
+- **Verb Practice**: Interactive German verb conjugation exercises
+- **Grammar Teaching**: AI-powered grammar concept validation system
 - **Progress Tracking**: Visual progress charts and statistics
-- **Settings**: User preference configuration
+- **Audio Integration**: Pronunciation features throughout the app
+- **Settings**: User preference configuration with audio controls
 
 ### Backend Services
 - **Storage Layer**: Abstracted storage interface with in-memory implementation
-- **OpenAI Service**: AI-powered vocabulary generation and memory tip creation
+- **OpenAI Service**: AI-powered vocabulary generation, memory tips, and grammar validation
 - **File Processing**: CSV import functionality for bulk vocabulary addition
 - **Spaced Repetition**: Algorithm implementation for optimal review scheduling
+- **Audio Services**: Web Speech API integration for German pronunciation
+- **Grammar Validation**: AI-powered assessment of user grammar explanations
 
 ## Data Flow
 

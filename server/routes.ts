@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertVocabularyWordSchema, insertUserProgressSchema, insertLearningSessionSchema, insertUserSettingsSchema } from "@shared/schema";
-import { generateVocabulary, generateMemoryTip } from "./services/openai";
+import { generateVocabulary, generateMemoryTip, validateGrammarExplanation } from "./services/openai";
 import multer from "multer";
 import Papa from "papaparse";
 
@@ -316,6 +316,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(words);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch words for review" });
+    }
+  });
+
+  // Grammar validation route
+  app.post("/api/grammar/validate", async (req, res) => {
+    try {
+      const { topic, explanation, examples, rules } = req.body;
+      
+      if (!topic || !explanation) {
+        return res.status(400).json({ message: "Topic and explanation are required" });
+      }
+
+      const feedback = await validateGrammarExplanation({
+        topic,
+        explanation,
+        examples: examples || [],
+        rules: rules || []
+      });
+
+      res.json(feedback);
+    } catch (error) {
+      console.error('Grammar validation error:', error);
+      res.status(500).json({ message: "Failed to validate grammar explanation" });
     }
   });
 
