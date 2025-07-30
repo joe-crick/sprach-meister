@@ -86,6 +86,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Learning-specific routes
+  app.get("/api/vocabulary/words-for-learning", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      const limit = parseInt(req.query.limit as string) || 10;
+      const words = await storage.getWordsForLearning(userId, limit);
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch words for learning" });
+    }
+  });
+
+  app.get("/api/vocabulary/words-for-review", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      const limit = parseInt(req.query.limit as string) || 25;
+      const words = await storage.getWordsForReview(userId, limit);
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch words for review" });
+    }
+  });
+
   // CSV upload route
   app.post("/api/vocabulary/upload-csv", upload.single("file"), async (req, res) => {
     try {

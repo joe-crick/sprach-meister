@@ -409,7 +409,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVocabularyWords(): Promise<VocabularyWord[]> {
-    await this.initializeDefaultData();
     return await db.select().from(vocabularyWords);
   }
 
