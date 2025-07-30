@@ -1,5 +1,8 @@
 import { type VocabularyWord, type InsertVocabularyWord, type UserProgress, type InsertUserProgress, type LearningSession, type InsertLearningSession, type UserSettings, type InsertUserSettings, type VocabularyWordWithProgress, type DashboardStats, type CategoryProgress } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { vocabularyWords, userProgress, learningSessions, userSettings } from "@shared/schema";
+import { eq, and, desc, sql, lt, gte } from "drizzle-orm";
 
 export interface IStorage {
   // Vocabulary words
@@ -344,4 +347,311 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  private async initializeDefaultData() {
+    // Check if we already have vocabulary words
+    const existingWords = await db.select().from(vocabularyWords).limit(1);
+    if (existingWords.length > 0) {
+      return; // Already initialized
+    }
+
+    // Initialize with default TELC B1 vocabulary
+    const defaultWords: InsertVocabularyWord[] = [
+      {
+        german: "Speisekarte",
+        article: "die",
+        english: "menu",
+        category: "Food & Dining",
+        exampleSentence: "Ich möchte gerne die Speisekarte sehen.",
+        exampleTranslation: "I would like to see the menu, please.",
+        memoryTip: "'Speise' means food/dish, 'Karte' means card - so 'Speisekarte' is literally a 'food card' or menu."
+      },
+      {
+        german: "Kaffee",
+        article: "der",
+        english: "coffee",
+        category: "Food & Dining",
+        exampleSentence: "Ich trinke gerne Kaffee am Morgen.",
+        exampleTranslation: "I like to drink coffee in the morning.",
+        memoryTip: "Coffee is masculine in German - remember 'der Kaffee'."
+      },
+      {
+        german: "Rechnung",
+        article: "die",
+        english: "bill",
+        category: "Food & Dining",
+        exampleSentence: "Können Sie mir bitte die Rechnung bringen?",
+        exampleTranslation: "Could you please bring me the bill?",
+        memoryTip: "Think of 'reckoning' - calculating what you owe."
+      },
+      {
+        german: "Termin",
+        article: "der",
+        english: "appointment",
+        category: "Healthcare",
+        exampleSentence: "Ich brauche einen Termin beim Arzt.",
+        exampleTranslation: "I need an appointment with the doctor.",
+        memoryTip: "'Termin' sounds like 'terminate' - ending your wait for an appointment."
+      },
+      {
+        german: "Krankenhaus",
+        article: "das",
+        english: "hospital",
+        category: "Healthcare",
+        exampleSentence: "Das Krankenhaus ist sehr modern.",
+        exampleTranslation: "The hospital is very modern.",
+        memoryTip: "'Kranken' (sick) + 'haus' (house) = sick house = hospital."
+      }
+    ];
+
+    await db.insert(vocabularyWords).values(defaultWords);
+  }
+
+  async getVocabularyWords(): Promise<VocabularyWord[]> {
+    await this.initializeDefaultData();
+    return await db.select().from(vocabularyWords);
+  }
+
+  async getVocabularyWordById(id: string): Promise<VocabularyWord | undefined> {
+    const [word] = await db.select().from(vocabularyWords).where(eq(vocabularyWords.id, id));
+    return word || undefined;
+  }
+
+  async getVocabularyWordsByCategory(category: string): Promise<VocabularyWord[]> {
+    return await db.select().from(vocabularyWords).where(eq(vocabularyWords.category, category));
+  }
+
+  async createVocabularyWord(word: InsertVocabularyWord): Promise<VocabularyWord> {
+    const [created] = await db.insert(vocabularyWords).values(word).returning();
+    return created;
+  }
+
+  async createVocabularyWords(words: InsertVocabularyWord[]): Promise<VocabularyWord[]> {
+    return await db.insert(vocabularyWords).values(words).returning();
+  }
+
+  async updateVocabularyWord(id: string, word: Partial<VocabularyWord>): Promise<VocabularyWord | undefined> {
+    const [updated] = await db.update(vocabularyWords).set(word).where(eq(vocabularyWords.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteVocabularyWord(id: string): Promise<boolean> {
+    const result = await db.delete(vocabularyWords).where(eq(vocabularyWords.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getUserProgress(userId = "default_user"): Promise<UserProgress[]> {
+    return await db.select().from(userProgress).where(eq(userProgress.userId, userId));
+  }
+
+  async getUserProgressForWord(wordId: string, userId = "default_user"): Promise<UserProgress | undefined> {
+    const [progress] = await db.select().from(userProgress)
+      .where(and(eq(userProgress.wordId, wordId), eq(userProgress.userId, userId)));
+    return progress || undefined;
+  }
+
+  async createUserProgress(progress: InsertUserProgress): Promise<UserProgress> {
+    const [created] = await db.insert(userProgress).values(progress).returning();
+    return created;
+  }
+
+  async updateUserProgress(id: string, progressUpdate: Partial<UserProgress>): Promise<UserProgress | undefined> {
+    const [updated] = await db.update(userProgress).set(progressUpdate).where(eq(userProgress.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async getLearningSession(id: string): Promise<LearningSession | undefined> {
+    const [session] = await db.select().from(learningSessions).where(eq(learningSessions.id, id));
+    return session || undefined;
+  }
+
+  async createLearningSession(session: InsertLearningSession): Promise<LearningSession> {
+    const [created] = await db.insert(learningSessions).values(session).returning();
+    return created;
+  }
+
+  async updateLearningSession(id: string, sessionUpdate: Partial<LearningSession>): Promise<LearningSession | undefined> {
+    const [updated] = await db.update(learningSessions).set(sessionUpdate).where(eq(learningSessions.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async getRecentSessions(userId = "default_user", limit = 10): Promise<LearningSession[]> {
+    return await db.select().from(learningSessions)
+      .where(eq(learningSessions.userId, userId))
+      .orderBy(desc(learningSessions.createdAt))
+      .limit(limit);
+  }
+
+  async getUserSettings(userId = "default_user"): Promise<UserSettings | undefined> {
+    const [settings] = await db.select().from(userSettings).where(eq(userSettings.userId, userId));
+    return settings || undefined;
+  }
+
+  async createUserSettings(settings: InsertUserSettings): Promise<UserSettings> {
+    const [created] = await db.insert(userSettings).values(settings).returning();
+    return created;
+  }
+
+  async updateUserSettings(userId: string, settingsUpdate: Partial<UserSettings>): Promise<UserSettings | undefined> {
+    const [updated] = await db.update(userSettings).set(settingsUpdate).where(eq(userSettings.userId, userId)).returning();
+    return updated || undefined;
+  }
+
+  async getVocabularyWordsWithProgress(userId = "default_user"): Promise<VocabularyWordWithProgress[]> {
+    const result = await db
+      .select({
+        id: vocabularyWords.id,
+        german: vocabularyWords.german,
+        article: vocabularyWords.article,
+        english: vocabularyWords.english,
+        category: vocabularyWords.category,
+        exampleSentence: vocabularyWords.exampleSentence,
+        exampleTranslation: vocabularyWords.exampleTranslation,
+        memoryTip: vocabularyWords.memoryTip,
+        difficulty: vocabularyWords.difficulty,
+        createdAt: vocabularyWords.createdAt,
+        progressId: userProgress.id,
+        progressCreatedAt: userProgress.createdAt,
+        wordId: userProgress.wordId,
+        progressUserId: userProgress.userId,
+        level: userProgress.level,
+        correctCount: userProgress.correctCount,
+        incorrectCount: userProgress.incorrectCount,
+        lastReviewed: userProgress.lastReviewed,
+        nextReview: userProgress.nextReview,
+        easeFactor: userProgress.easeFactor,
+        interval: userProgress.interval,
+      })
+      .from(vocabularyWords)
+      .leftJoin(userProgress, and(
+        eq(vocabularyWords.id, userProgress.wordId),
+        eq(userProgress.userId, userId)
+      ));
+
+    return result.map(row => ({
+      id: row.id,
+      german: row.german,
+      article: row.article,
+      english: row.english,
+      category: row.category,
+      exampleSentence: row.exampleSentence,
+      exampleTranslation: row.exampleTranslation,
+      memoryTip: row.memoryTip,
+      difficulty: row.difficulty,
+      createdAt: row.createdAt,
+      progress: row.progressId ? {
+        id: row.progressId,
+        createdAt: row.progressCreatedAt,
+        wordId: row.wordId!,
+        userId: row.progressUserId!,
+        level: row.level,
+        correctCount: row.correctCount,
+        incorrectCount: row.incorrectCount,
+        lastReviewed: row.lastReviewed,
+        nextReview: row.nextReview,
+        easeFactor: row.easeFactor,
+        interval: row.interval,
+      } : undefined,
+      accuracyRate: (row.correctCount && row.incorrectCount !== null && (row.correctCount + row.incorrectCount) > 0) 
+        ? Math.round((row.correctCount / (row.correctCount + row.incorrectCount)) * 100)
+        : undefined
+    }));
+  }
+
+  async getWordsForReview(userId = "default_user", limit = 25): Promise<VocabularyWordWithProgress[]> {
+    const now = new Date();
+    const allWords = await this.getVocabularyWordsWithProgress(userId);
+    
+    return allWords
+      .filter(word => word.progress?.nextReview && word.progress.nextReview <= now)
+      .slice(0, limit);
+  }
+
+  async getWordsForLearning(userId = "default_user", limit = 10): Promise<VocabularyWordWithProgress[]> {
+    const allWords = await this.getVocabularyWordsWithProgress(userId);
+    
+    return allWords
+      .filter(word => !word.progress?.lastReviewed)
+      .slice(0, limit);
+  }
+
+  async getDashboardStats(userId = "default_user"): Promise<DashboardStats> {
+    const allWords = await this.getVocabularyWordsWithProgress(userId);
+    const wordsLearned = allWords.filter(word => word.progress?.lastReviewed).length;
+    const totalWords = allWords.length;
+    const dueWords = allWords.filter(word => word.progress?.nextReview && word.progress.nextReview <= new Date()).length;
+    
+    const recentSessions = await this.getRecentSessions(userId, 7);
+    const streak = this.calculateStreak(recentSessions);
+    
+    // Calculate accuracy from recent sessions
+    const totalAnswers = recentSessions.reduce((sum, session) => sum + (session.totalAnswers || 0), 0);
+    const correctAnswers = recentSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+    const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+
+    return {
+      streak,
+      wordsLearned,
+      totalWords,
+      accuracy,
+      dueWords
+    };
+  }
+
+  async getCategoryProgress(userId = "default_user"): Promise<CategoryProgress[]> {
+    const allWords = await this.getVocabularyWordsWithProgress(userId);
+    const categories = new Map<string, { total: number; learned: number; }>();
+
+    allWords.forEach(word => {
+      if (!categories.has(word.category)) {
+        categories.set(word.category, { total: 0, learned: 0 });
+      }
+      const cat = categories.get(word.category)!;
+      cat.total++;
+      if (word.progress?.lastReviewed) {
+        cat.learned++;
+      }
+    });
+
+    return Array.from(categories.entries()).map(([category, stats]) => ({
+      category,
+      learned: stats.learned,
+      total: stats.total,
+      percentage: Math.round((stats.learned / stats.total) * 100)
+    }));
+  }
+
+  private calculateStreak(sessions: LearningSession[]): number {
+    if (sessions.length === 0) return 0;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let streak = 0;
+    let currentDate = new Date(today);
+    
+    for (let i = 0; i < 30; i++) { // Check up to 30 days back
+      const dayStart = new Date(currentDate);
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      const hasSessionOnDay = sessions.some(session => {
+        const sessionDate = new Date(session.createdAt!);
+        return sessionDate >= dayStart && sessionDate <= dayEnd && session.completed;
+      });
+      
+      if (hasSessionOnDay) {
+        streak++;
+      } else if (streak > 0) {
+        break; // Break streak if no session found
+      }
+      
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+    
+    return streak;
+  }
+}
+
+export const storage = new DatabaseStorage();
