@@ -36,7 +36,7 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Core Data Models
-1. **Vocabulary Words**: German words with articles, English translations, categories, and example sentences
+1. **Vocabulary Words**: German words with optional articles (required only for nouns), English translations, word types (noun, verb, adjective, etc.), categories, and example sentences
 2. **User Progress**: Spaced repetition tracking with ease factors and review intervals
 3. **Learning Sessions**: Session management for learning and review activities
 4. **User Settings**: Configurable preferences for learning experience
@@ -71,9 +71,9 @@ Preferred communication style: Simple, everyday language.
 6. Session completion triggers statistics updates
 
 ### Vocabulary Management Flow
-1. Manual word addition through forms with validation
+1. Manual word addition through forms with conditional validation (articles required only for nouns)
 2. AI-generated vocabulary from topic prompts
-3. CSV bulk import with error handling
+3. CSV bulk import supporting multiple word types with optional articles
 4. Real-time search and filtering on frontend
 5. Progress tracking integration for all vocabulary sources
 
@@ -126,3 +126,18 @@ Preferred communication style: Simple, everyday language.
 - **Stateless Design**: No server-side sessions, all state in database
 - **Caching Strategy**: TanStack Query provides client-side caching
 - **Database Optimization**: Indexed queries for vocabulary and progress lookups
+
+## Recent Changes (January 2025)
+
+### Multi-Word Type Support
+- **Enhanced Schema**: Added `wordType` field supporting noun, verb, adjective, adverb, expression, phrase, other
+- **Optional Articles**: Articles now only required for nouns, optional for all other word types
+- **Conditional UI**: Add-word form dynamically shows article selection only for nouns
+- **CSV Import Enhancement**: Supports `wordType` column and optional articles in bulk imports
+- **Validation Updates**: Form validation adapted to require articles only for noun word types
+
+### Learning Features Enhancement
+- **Interactive Fill-in-the-Blank**: LearnExercise component with blanked-out words for testing
+- **Practice All Words**: On-demand review functionality beyond scheduled spaced repetition
+- **Two-Phase Learning**: Learn phase followed by test phase with immediate feedback
+- **Enhanced Dashboard**: Three learning modes (Learn New, Review Due, Practice All)

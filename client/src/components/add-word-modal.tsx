@@ -118,7 +118,7 @@ export default function AddWordModal({ open, onClose }: AddWordModalProps) {
             <Label htmlFor="wordType">Word Type *</Label>
             <Select 
               value={formData.wordType} 
-              onValueChange={(value) => setFormData({ ...formData, wordType: value, article: value === "noun" ? formData.article : "" })}
+              onValueChange={(value: any) => setFormData({ ...formData, wordType: value, article: value === "noun" ? formData.article : "" })}
               required
             >
               <SelectTrigger>
