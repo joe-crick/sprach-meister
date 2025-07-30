@@ -173,7 +173,7 @@ export default function Vocabulary() {
   }) || [];
 
   // Get unique categories for filter dropdown
-  const categories = [...new Set(vocabulary?.map(w => w.category) || [])];
+  const categories = Array.from(new Set(vocabulary?.map(w => w.category) || []));
 
   if (isLoading) {
     return (
@@ -372,7 +372,7 @@ export default function Vocabulary() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {getDaysUntilReview(word.progress?.nextReview)}
+                            {getDaysUntilReview(word.progress?.nextReview?.toISOString())}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <Button variant="ghost" size="sm">
