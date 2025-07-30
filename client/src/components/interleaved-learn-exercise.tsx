@@ -9,6 +9,7 @@ import { GermanWordAudioButton, SentenceAudioButton } from "@/components/audio-b
 
 interface InterleavedLearnExerciseProps {
   word: VocabularyWordWithProgress;
+  isFirstTime: boolean;
   onAnswer: (correct: boolean, userAnswer: string) => void;
   onNext: () => void;
   exerciseNumber: number;
@@ -19,14 +20,25 @@ type ExercisePhase = "presentation" | "test" | "feedback";
 
 export default function InterleavedLearnExercise({ 
   word, 
+  isFirstTime,
   onAnswer, 
   onNext, 
   exerciseNumber, 
   totalExercises 
 }: InterleavedLearnExerciseProps) {
-  const [phase, setPhase] = useState<ExercisePhase>("presentation");
+  // Start with presentation only for first-time words, go straight to test for reviews
+  const [phase, setPhase] = useState<ExercisePhase>(isFirstTime ? "presentation" : "test");
   const [userAnswer, setUserAnswer] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
+
+  // Reset component state when word changes (important for the queue system)
+  const [lastWordId, setLastWordId] = useState(word.id);
+  if (word.id !== lastWordId) {
+    setLastWordId(word.id);
+    setPhase(isFirstTime ? "presentation" : "test");
+    setUserAnswer("");
+    setIsCorrect(false);
+  }
 
   const getGenderColor = (article: string | null) => {
     if (!article) return "text-gray-600";
@@ -73,7 +85,18 @@ export default function InterleavedLearnExercise({
   };
 
   const handleSubmitAnswer = () => {
-    const correct = userAnswer.toLowerCase().trim() === word.german.toLowerCase().trim();
+    let correct = false;
+    const userInput = userAnswer.toLowerCase().trim();
+    const germanWord = word.german.toLowerCase().trim();
+    
+    // Check if user needs to include article
+    if (word.article && word.wordType === "noun") {
+      const expectedWithArticle = `${word.article} ${germanWord}`;
+      correct = userInput === expectedWithArticle || userInput === germanWord;
+    } else {
+      correct = userInput === germanWord;
+    }
+    
     setIsCorrect(correct);
     setPhase("feedback");
     onAnswer(correct, userAnswer);
@@ -95,10 +118,10 @@ export default function InterleavedLearnExercise({
       <div className="space-y-6">
         <div className="text-center">
           <div className="text-sm text-gray-500 mb-2">
-            Word {exerciseNumber} of {totalExercises}
+            Exercise {exerciseNumber} of {totalExercises}
           </div>
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-            Learn this word:
+            {isFirstTime ? "Learn this word:" : "Review:"}
           </h2>
         </div>
 
@@ -186,7 +209,12 @@ export default function InterleavedLearnExercise({
               </div>
               
               <div className="text-sm text-gray-500 mb-4">
-                English: {word.english}
+                English: <strong>{word.english}</strong>
+                {!isFirstTime && (
+                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    Review
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-center items-center space-x-4 mb-6">
@@ -194,7 +222,7 @@ export default function InterleavedLearnExercise({
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type the German word..."
+                  placeholder={word.article && word.wordType === "noun" ? "Type article + word (e.g., der Hund)" : "Type the German word..."}
                   className="max-w-xs text-center text-lg"
                   autoFocus
                 />

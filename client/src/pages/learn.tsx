@@ -16,7 +16,7 @@ export default function Learn() {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalAnswers, setTotalAnswers] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [wordQueue, setWordQueue] = useState<VocabularyWordWithProgress[]>([]);
+  const [wordQueue, setWordQueue] = useState<Array<{word: VocabularyWordWithProgress, isFirstTime: boolean}>>([]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -87,33 +87,41 @@ export default function Learn() {
   }, [wordsForLearning, sessionId]);
 
   // Create interleaved queue like Memrise: ensures each word appears multiple times
-  const createInterleavedQueue = (words: VocabularyWordWithProgress[]): VocabularyWordWithProgress[] => {
-    const queue: VocabularyWordWithProgress[] = [];
+  const createInterleavedQueue = (words: VocabularyWordWithProgress[]): Array<{word: VocabularyWordWithProgress, isFirstTime: boolean}> => {
+    const queue: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean}> = [];
     
-    // Each word will appear 4 times: initial + 3 reviews
-    const repetitions = 4;
+    // Memrise-style algorithm: each word appears 4 times
+    // 1st time: presentation + test
+    // 2nd, 3rd, 4th times: just test (with increasing spacing)
     
-    // Create rounds of words with increasing spacing
-    for (let round = 0; round < repetitions; round++) {
-      if (round === 0) {
-        // First round: all words in order
-        queue.push(...words);
-      } else {
-        // Subsequent rounds: insert words with spacing based on round
-        const spacing = Math.max(2, round + 1);
+    // First, add all words for initial learning (presentation + test)
+    words.forEach(word => {
+      queue.push({ word, isFirstTime: true });
+    });
+    
+    // Then add review tests with intelligent spacing
+    const reviewRounds = 3; // Additional review attempts per word
+    
+    for (let round = 1; round <= reviewRounds; round++) {
+      words.forEach((word, wordIndex) => {
+        // Calculate where to insert this review based on spacing algorithm
+        // Early reviews come sooner, later reviews have more spacing
+        const minGap = Math.max(2, round); // At least 2-3 words between reviews
+        const idealPosition = queue.length + (wordIndex * minGap);
         
-        words.forEach((word, index) => {
-          // Calculate insertion position with spacing
-          const basePosition = queue.length;
-          const insertPosition = Math.max(0, basePosition - words.length + (index * spacing));
-          queue.splice(insertPosition, 0, word);
+        // Insert the review test
+        queue.splice(Math.min(idealPosition, queue.length), 0, { 
+          word, 
+          isFirstTime: false 
         });
-      }
+      });
     }
     
-    // Log the queue for debugging
-    console.log('Interleaved queue created:', queue.map((w, i) => `${i + 1}: ${w.german}`));
-    console.log(`Total exercises: ${queue.length}, Unique words: ${words.length}, Each word appears ${queue.length / words.length} times`);
+    console.log('Memrise-style queue created:');
+    queue.forEach((item, i) => {
+      console.log(`${i + 1}: ${item.word.german} (${item.isFirstTime ? 'LEARN' : 'TEST'})`);
+    });
+    console.log(`Total exercises: ${queue.length}, Unique words: ${words.length}`);
     
     return queue;
   };
@@ -126,9 +134,9 @@ export default function Learn() {
     setTotalAnswers(newTotalAnswers);
 
     if (wordQueue.length > 0) {
-      const currentWord = wordQueue[currentWordIndex];
+      const currentItem = wordQueue[currentWordIndex];
       createProgressMutation.mutate({ 
-        wordId: currentWord.id, 
+        wordId: currentItem.word.id, 
         correct 
       });
     }
@@ -250,7 +258,7 @@ export default function Learn() {
   }
 
   // Main learning interface with interleaved exercises
-  const currentWord = wordQueue[currentWordIndex];
+  const currentItem = wordQueue[currentWordIndex];
   const progress = ((currentWordIndex + 1) / wordQueue.length) * 100;
 
   return (
@@ -281,7 +289,8 @@ export default function Learn() {
 
           {/* Interleaved Exercise */}
           <InterleavedLearnExercise 
-            word={currentWord} 
+            word={currentItem.word} 
+            isFirstTime={currentItem.isFirstTime}
             onAnswer={handleAnswer}
             onNext={handleNext}
             exerciseNumber={currentWordIndex + 1}
