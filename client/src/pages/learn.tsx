@@ -82,29 +82,38 @@ export default function Learn() {
       // Each word appears multiple times throughout the session
       const interleavedQueue = createInterleavedQueue(wordsForLearning);
       setWordQueue(interleavedQueue);
+      console.log(`Learning session created with ${wordsForLearning.length} unique words, ${interleavedQueue.length} total exercises`);
     }
   }, [wordsForLearning, sessionId]);
 
-  // Create interleaved queue like Memrise: word1, word2, word3, word1, word2, word4, word1, word3, etc.
+  // Create interleaved queue like Memrise: ensures each word appears multiple times
   const createInterleavedQueue = (words: VocabularyWordWithProgress[]): VocabularyWordWithProgress[] => {
     const queue: VocabularyWordWithProgress[] = [];
-    const wordsToRepeat = [...words];
     
-    // First round: introduce all words once
-    queue.push(...wordsToRepeat);
+    // Each word will appear 4 times: initial + 3 reviews
+    const repetitions = 4;
     
-    // Subsequent rounds: repeat words with increasing intervals
-    // Each word appears 4 times total (initial + 3 reviews)
-    for (let round = 1; round <= 3; round++) {
-      // Insert words at intervals based on round number
-      const interval = Math.max(2, Math.floor(words.length / (round + 1)));
-      
-      wordsToRepeat.forEach((word, index) => {
-        const insertPosition = queue.length - Math.floor(words.length * (4 - round) / 4) + (index * interval);
-        const safePosition = Math.min(insertPosition, queue.length);
-        queue.splice(safePosition, 0, word);
-      });
+    // Create rounds of words with increasing spacing
+    for (let round = 0; round < repetitions; round++) {
+      if (round === 0) {
+        // First round: all words in order
+        queue.push(...words);
+      } else {
+        // Subsequent rounds: insert words with spacing based on round
+        const spacing = Math.max(2, round + 1);
+        
+        words.forEach((word, index) => {
+          // Calculate insertion position with spacing
+          const basePosition = queue.length;
+          const insertPosition = Math.max(0, basePosition - words.length + (index * spacing));
+          queue.splice(insertPosition, 0, word);
+        });
+      }
     }
+    
+    // Log the queue for debugging
+    console.log('Interleaved queue created:', queue.map((w, i) => `${i + 1}: ${w.german}`));
+    console.log(`Total exercises: ${queue.length}, Unique words: ${words.length}, Each word appears ${queue.length / words.length} times`);
     
     return queue;
   };
