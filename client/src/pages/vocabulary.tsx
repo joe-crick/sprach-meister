@@ -405,7 +405,7 @@ export default function Vocabulary() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {getDaysUntilReview(word.progress?.nextReview?.toISOString())}
+                            {getDaysUntilReview(word.progress?.nextReview ? word.progress.nextReview.toISOString() : null)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <Button variant="ghost" size="sm">
