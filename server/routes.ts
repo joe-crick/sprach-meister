@@ -190,20 +190,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/vocabulary/upload-csv", upload.single("file"), async (req, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
+        return res.status(400).json({ 
+          message: "No CSV file uploaded",
+          details: "Please select a CSV file to upload."
+        });
+      }
+
+      // Check file type
+      if (!req.file.originalname.toLowerCase().endsWith('.csv')) {
+        return res.status(400).json({
+          message: "Invalid file type",
+          details: "Please upload a CSV file (.csv extension)."
+        });
       }
 
       const csvData = req.file.buffer.toString("utf8");
+      
+      // Check if file is empty
+      if (!csvData.trim()) {
+        return res.status(400).json({
+          message: "Empty CSV file",
+          details: "The uploaded CSV file contains no data."
+        });
+      }
+
       const parsed = Papa.parse(csvData, { 
         header: true,
         skipEmptyLines: true
       });
 
       if (parsed.errors.length > 0) {
-        return res.status(400).json({ message: "CSV parsing error", errors: parsed.errors });
+        const errorDetails = parsed.errors.map(e => {
+          if (e.row !== undefined) {
+            return `Row ${e.row + 2}: ${e.message}`; // +2 because Papa.parse is 0-indexed and we have headers
+          }
+          return e.message;
+        });
+        
+        return res.status(400).json({ 
+          message: "CSV parsing errors", 
+          details: `Found ${parsed.errors.length} parsing error(s):`,
+          errors: errorDetails
+        });
       }
 
-      const words = parsed.data.map((row: any) => {
+      if (!parsed.data || parsed.data.length === 0) {
+        return res.status(400).json({
+          message: "No data rows found",
+          details: "The CSV file appears to have headers but no data rows."
+        });
+      }
+
+      // Check for required columns
+      const firstRow = parsed.data[0] as any;
+      const availableColumns = Object.keys(firstRow);
+      const hasGerman = availableColumns.some(col => col.toLowerCase().includes('german'));
+      const hasEnglish = availableColumns.some(col => col.toLowerCase().includes('english'));
+
+      if (!hasGerman) {
+        return res.status(400).json({
+          message: "Missing required column: 'german'",
+          details: `Available columns: ${availableColumns.join(', ')}. Please ensure you have a column named 'german' or 'German'.`
+        });
+      }
+
+      if (!hasEnglish) {
+        return res.status(400).json({
+          message: "Missing required column: 'english'",
+          details: `Available columns: ${availableColumns.join(', ')}. Please ensure you have a column named 'english' or 'English'.`
+        });
+      }
+
+      const errors: string[] = [];
+      const words = parsed.data.map((row: any, index: number) => {
+        const rowNum = index + 2; // +2 for header and 0-indexing
+        
         // Clean up article field - treat "-", "none", or empty as undefined
         let article = row.article || row.Article;
         if (article === "-" || article === "none" || article === "" || !article) {
@@ -211,41 +272,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Determine word type - if no article or article is "-", default to verb
-        let wordType = row.wordType || row["Word Type"] || row.type;
-        if (!wordType) {
-          // Auto-detect based on article presence
-          wordType = (article && ["der", "die", "das"].includes(article)) ? "noun" : "verb";
+        let wordType = row.wordType || row["Word Type"] || row.type || "noun";
+        
+        // Validate and normalize wordType
+        const validWordTypes = ["noun", "verb", "adjective", "adverb", "expression", "phrase", "other"];
+        if (!validWordTypes.includes(wordType.toLowerCase())) {
+          errors.push(`Row ${rowNum}: Invalid wordType '${wordType}'. Valid options: ${validWordTypes.join(', ')}`);
+          wordType = "noun"; // Default fallback
+        } else {
+          wordType = wordType.toLowerCase();
+        }
+
+        const german = row.german || row.German;
+        const english = row.english || row.English;
+
+        // Validate required fields
+        if (!german || german.trim() === "") {
+          errors.push(`Row ${rowNum}: Missing or empty 'german' field`);
+        }
+        
+        if (!english || english.trim() === "") {
+          errors.push(`Row ${rowNum}: Missing or empty 'english' field`);
+        }
+
+        // Validate article for nouns
+        if (wordType === "noun" && !article) {
+          errors.push(`Row ${rowNum}: Word '${german}' is marked as a noun but has no article. Please provide der/die/das or change wordType.`);
+        }
+
+        // Validate article values
+        if (article && !["der", "die", "das"].includes(article.toLowerCase())) {
+          errors.push(`Row ${rowNum}: Invalid article '${article}' for word '${german}'. Must be 'der', 'die', or 'das'.`);
         }
         
         return {
-          german: row.german || row.German,
-          article: article, // Already converted to undefined above
-          english: row.english || row.English,
-          category: row.category || row.Category || "Other",
+          german: german?.trim(),
+          article: article?.toLowerCase(),
+          english: english?.trim(),
+          category: (row.category || row.Category || "Other").trim(),
           wordType: wordType,
-          exampleSentence: row.exampleSentence || row["Example Sentence"] || "",
-          exampleTranslation: row.exampleTranslation || row["Example Translation"] || "",
-          memoryTip: row.memoryTip || row["Memory Tip"] || ""
+          exampleSentence: (row.exampleSentence || row["Example Sentence"] || "").trim(),
+          exampleTranslation: (row.exampleTranslation || row["Example Translation"] || "").trim(),
+          memoryTip: (row.memoryTip || row["Memory Tip"] || "").trim()
         };
       });
 
-      // Validate each word
-      for (const word of words) {
-        if (!word.german || !word.english) {
-          return res.status(400).json({ message: "Each row must have 'german' and 'english' fields" });
-        }
-        
-        // Validate that nouns have articles
-        if (word.wordType === "noun" && !word.article) {
-          return res.status(400).json({ 
-            message: `Word "${word.german}" is marked as a noun but has no article. Please provide der/die/das or change wordType.` 
-          });
-        }
+      // Return validation errors if any
+      if (errors.length > 0) {
+        return res.status(400).json({
+          message: `Found ${errors.length} validation error(s)`,
+          details: "Please fix the following issues in your CSV:",
+          errors: errors
+        });
       }
 
       const validation = z.array(insertVocabularyWordSchema).safeParse(words);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid CSV data format", errors: validation.error.errors });
+        const detailedErrors = validation.error.errors.map(err => {
+          const path = err.path.length > 0 ? `Field '${err.path.join('.')}': ` : '';
+          return `${path}${err.message}`;
+        });
+        
+        return res.status(400).json({ 
+          message: "Schema validation failed", 
+          details: "The CSV data doesn't match the expected format:",
+          errors: detailedErrors 
+        });
       }
 
       const createdWords = await storage.createVocabularyWords(validation.data);
