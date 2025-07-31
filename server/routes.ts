@@ -660,6 +660,213 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export database schema
+  app.get("/api/export/schema", async (req, res) => {
+    try {
+      const schema = {
+        tables: {
+          vocabulary_words: {
+            description: "German vocabulary words with translations and metadata",
+            columns: {
+              id: "UUID primary key",
+              german: "German word or phrase",
+              article: "German article (der/die/das) - required only for nouns",
+              english: "English translation",
+              category: "Learning category",
+              word_type: "Type: noun, verb, adjective, adverb, expression, phrase, other",
+              example_sentence: "German example sentence",
+              example_translation: "English translation of example",
+              memory_tip: "Mnemonic or memory aid",
+              difficulty: "Difficulty level (1-5)",
+              created_at: "Timestamp when added"
+            }
+          },
+          user_progress: {
+            description: "Spaced repetition progress tracking",
+            columns: {
+              id: "UUID primary key",
+              word_id: "Reference to vocabulary word",
+              user_id: "User identifier",
+              level: "Spaced repetition level",
+              correct_count: "Number of correct answers",
+              incorrect_count: "Number of incorrect answers",
+              last_reviewed: "Last review timestamp",
+              next_review: "Next review due timestamp",
+              ease_factor: "Spaced repetition ease factor",
+              interval: "Days until next review",
+              created_at: "Progress tracking start date"
+            }
+          },
+          learning_sessions: {
+            description: "Learning session history and statistics",
+            columns: {
+              id: "UUID primary key",
+              user_id: "User identifier",
+              type: "Session type: learn or review",
+              words_count: "Number of words in session",
+              correct_answers: "Correct answers in session",
+              total_answers: "Total answers in session",
+              duration: "Session duration in minutes",
+              completed: "Whether session was completed",
+              created_at: "Session start timestamp"
+            }
+          },
+          user_settings: {
+            description: "User preferences and configuration",
+            columns: {
+              id: "UUID primary key",
+              user_id: "User identifier",
+              new_words_per_session: "Words per learning session",
+              review_session_size: "Words per review session",
+              auto_pronounce: "Auto-play pronunciation",
+              show_tips: "Show memory tips",
+              spaced_repetition_difficulty: "Algorithm difficulty: easy, normal, hard",
+              enable_notifications: "Enable review notifications",
+              language: "App language: english, german",
+              whatsapp_number: "Phone number for WhatsApp reminders",
+              reminder_time: "Daily reminder time (HH:MM)",
+              enable_whatsapp_reminders: "Enable WhatsApp notifications",
+              created_at: "Settings creation timestamp"
+            }
+          }
+        },
+        relationships: {
+          "user_progress -> vocabulary_words": "Many-to-one via word_id",
+          "learning_sessions -> user": "Many-to-one via user_id",
+          "user_settings -> user": "One-to-one via user_id"
+        },
+        export_info: {
+          generated_at: new Date().toISOString(),
+          app_name: "SprachMeister - German B1 Trainer",
+          version: "1.0",
+          database_type: "PostgreSQL with Drizzle ORM"
+        }
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="sprachmeister-schema.json"');
+      res.json(schema);
+    } catch (error) {
+      console.error('Schema export error:', error);
+      res.status(500).json({ message: "Failed to export database schema" });
+    }
+  });
+
+  // Export vocabulary as CSV
+  app.get("/api/export/vocabulary", async (req, res) => {
+    try {
+      const words = await storage.getAllWords();
+      
+      // CSV headers
+      const headers = [
+        "German",
+        "Article", 
+        "English",
+        "Category",
+        "Word Type",
+        "Example Sentence",
+        "Example Translation",
+        "Memory Tip",
+        "Difficulty"
+      ];
+
+      // Convert words to CSV format
+      const csvRows = [
+        headers.join(","),
+        ...words.map(word => [
+          `"${(word.german || "").replace(/"/g, '""')}"`,
+          `"${(word.article || "").replace(/"/g, '""')}"`,
+          `"${(word.english || "").replace(/"/g, '""')}"`,
+          `"${(word.category || "").replace(/"/g, '""')}"`,
+          `"${(word.wordType || "noun").replace(/"/g, '""')}"`,
+          `"${(word.exampleSentence || "").replace(/"/g, '""')}"`,
+          `"${(word.exampleTranslation || "").replace(/"/g, '""')}"`,
+          `"${(word.memoryTip || "").replace(/"/g, '""')}"`,
+          `"${word.difficulty || 1}"`
+        ].join(","))
+      ];
+
+      const csvContent = csvRows.join("\n");
+      const filename = `german-vocabulary-${new Date().toISOString().split('T')[0]}.csv`;
+
+      res.setHeader('Content-Type', 'text/csv;charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Vocabulary export error:', error);
+      res.status(500).json({ message: "Failed to export vocabulary" });
+    }
+  });
+
+  // Download CSV template
+  app.get("/api/template/vocabulary-csv", async (req, res) => {
+    try {
+      const headers = [
+        "German",
+        "Article", 
+        "English",
+        "Category",
+        "Word Type",
+        "Example Sentence",
+        "Example Translation",
+        "Memory Tip",
+        "Difficulty"
+      ];
+
+      const sampleRows = [
+        [
+          "Hund",
+          "der",
+          "dog",
+          "Animals",
+          "noun",
+          "Der Hund bellt laut.",
+          "The dog barks loudly.",
+          "Think of a hound dog - both start with 'h'",
+          "1"
+        ],
+        [
+          "laufen",
+          "",
+          "to run",
+          "Verbs",
+          "verb",
+          "Ich laufe jeden Tag.",
+          "I run every day.",
+          "Laufen sounds like 'loafen' - but it means the opposite!",
+          "2"
+        ],
+        [
+          "schnell",
+          "",
+          "fast, quick",
+          "Adjectives",
+          "adjective",
+          "Das Auto ist sehr schnell.",
+          "The car is very fast.",
+          "Schnell sounds like 'snail' but means the opposite - fast!",
+          "1"
+        ]
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...sampleRows.map(row => 
+          row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",")
+        )
+      ];
+
+      const csvContent = csvRows.join("\n");
+
+      res.setHeader('Content-Type', 'text/csv;charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="vocabulary-template.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Template export error:', error);
+      res.status(500).json({ message: "Failed to generate CSV template" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

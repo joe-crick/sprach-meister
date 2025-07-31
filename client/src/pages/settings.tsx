@@ -480,19 +480,53 @@ export default function Settings() {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center py-4 border-b border-gray-200">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900">Export Progress</h4>
-                  <p className="text-sm text-gray-500">Download your learning data as CSV</p>
+                  <h4 className="text-sm font-medium text-gray-900">Export Vocabulary</h4>
+                  <p className="text-sm text-gray-500">Download your vocabulary as CSV file</p>
                 </div>
                 <Button
-                  onClick={() => exportProgressMutation.mutate()}
-                  disabled={exportProgressMutation.isPending}
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = '/api/export/vocabulary';
+                    link.download = `german-vocabulary-${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    toast({
+                      title: "Export Started",
+                      description: "Your vocabulary CSV download has started.",
+                    });
+                  }}
                   className="bg-primary hover:bg-primary/90"
                 >
-                  {exportProgressMutation.isPending ? "Exporting..." : "Export"}
+                  Export CSV
                 </Button>
               </div>
 
-              <div className="flex justify-between items-center py-4">
+              <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">Export Database Schema</h4>
+                  <p className="text-sm text-gray-500">Download complete database structure as JSON</p>
+                </div>
+                <Button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = '/api/export/schema';
+                    link.download = 'sprachmeister-schema.json';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    toast({
+                      title: "Schema Export Started",
+                      description: "Database schema download has started.",
+                    });
+                  }}
+                  variant="outline"
+                >
+                  Export Schema
+                </Button>
+              </div>
+
+              <div className="flex justify-between items-center py-4 border-b border-gray-200">
                 <div>
                   <h4 className="text-sm font-medium text-gray-900">Reset Progress</h4>
                   <p className="text-sm text-gray-500">Clear all learning progress and start over</p>

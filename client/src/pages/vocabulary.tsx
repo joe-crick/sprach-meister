@@ -240,6 +240,26 @@ export default function Vocabulary() {
               </div>
 
               <Button 
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = '/api/template/vocabulary-csv';
+                  link.download = 'vocabulary-template.csv';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  toast({
+                    title: "Template Downloaded",
+                    description: "Use this CSV template to upload your vocabulary.",
+                  });
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Download CSV Template
+              </Button>
+
+              <Button 
                 onClick={handleAiGeneration}
                 disabled={isGenerating}
                 className="flex-1 bg-secondary hover:bg-secondary/90"
