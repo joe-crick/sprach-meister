@@ -375,7 +375,7 @@ export default function Settings() {
                   New words per session
                 </Label>
                 <Select
-                  value={String(settings.newWordsPerSession)}
+                  value={String(settings.newWordsPerSession || 10)}
                   onValueChange={(value) => handleSettingChange("newWordsPerSession", parseInt(value))}
                 >
                   <SelectTrigger className="w-full">
@@ -395,7 +395,7 @@ export default function Settings() {
                   Review session size
                 </Label>
                 <Select
-                  value={String(settings.reviewSessionSize)}
+                  value={String(settings.reviewSessionSize || 25)}
                   onValueChange={(value) => handleSettingChange("reviewSessionSize", parseInt(value))}
                 >
                   <SelectTrigger className="w-full">
