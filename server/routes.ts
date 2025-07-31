@@ -20,17 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/vocabulary/:id", async (req, res) => {
-    try {
-      const word = await storage.getVocabularyWordById(req.params.id);
-      if (!word) {
-        return res.status(404).json({ message: "Word not found" });
-      }
-      res.json(word);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch word" });
-    }
-  });
+  // Moved to end to avoid route conflicts
 
   app.post("/api/vocabulary", async (req, res) => {
     try {
@@ -550,16 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/vocabulary/all-words-for-review", async (req, res) => {
-    try {
-      const userId = req.query.userId as string || "default_user";
-      const limit = parseInt(req.query.limit as string) || 25;
-      const words = await storage.getAllWordsForReview(userId, limit);
-      res.json(words);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch all words for review" });
-    }
-  });
+
 
   // Grammar validation route
   app.post("/api/grammar/validate", async (req, res) => {
@@ -890,6 +871,19 @@ Viel Erfolg beim Deutschlernen! 🇩🇪`;
     } catch (error) {
       console.error('Template export error:', error);
       res.status(500).json({ message: "Failed to generate CSV template" });
+    }
+  });
+
+  // Single word by ID - moved to end to avoid route conflicts
+  app.get("/api/vocabulary/:id", async (req, res) => {
+    try {
+      const word = await storage.getVocabularyWordById(req.params.id);
+      if (!word) {
+        return res.status(404).json({ message: "Word not found" });
+      }
+      res.json(word);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch word" });
     }
   });
 
