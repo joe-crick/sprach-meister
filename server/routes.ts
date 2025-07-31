@@ -372,6 +372,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/progress/word/:wordId", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      const wordId = req.params.wordId;
+      const progress = await storage.getUserProgressForWord(wordId, userId);
+      
+      if (!progress) {
+        return res.status(404).json({ message: "Progress not found" });
+      }
+      
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch progress for word" });
+    }
+  });
+
+  app.post("/api/progress/word/:wordId", async (req, res) => {
+    try {
+      const userId = req.body.userId || "default_user";
+      const wordId = req.params.wordId;
+      const correct = req.body.correct === true;
+      
+      // Check if progress already exists
+      const existingProgress = await storage.getUserProgressForWord(wordId, userId);
+      
+      if (existingProgress) {
+        // Update existing progress
+        const updates = {
+          correctCount: (existingProgress.correctCount || 0) + (correct ? 1 : 0),
+          incorrectCount: (existingProgress.incorrectCount || 0) + (correct ? 0 : 1),
+          lastReviewed: new Date(),
+          nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)),
+          easeFactor: correct ? Math.min((existingProgress.easeFactor || 250) + 10, 300) : Math.max((existingProgress.easeFactor || 250) - 20, 130),
+          interval: correct ? (existingProgress.interval || 1) + 1 : 1,
+          level: correct ? (existingProgress.level || 1) + 1 : Math.max((existingProgress.level || 1) - 1, 1)
+        };
+        
+        const progress = await storage.updateUserProgress(existingProgress.id, updates);
+        res.json(progress);
+      } else {
+        // Create new progress
+        const progress = await storage.createUserProgress({
+          wordId,
+          userId,
+          level: 1,
+          correctCount: correct ? 1 : 0,
+          incorrectCount: correct ? 0 : 1,
+          lastReviewed: new Date(),
+          nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)),
+          easeFactor: correct ? 250 : 200,
+          interval: correct ? 1 : 0
+        });
+        res.json(progress);
+      }
+    } catch (error) {
+      console.error('Progress update error:', error);
+      res.status(500).json({ message: "Failed to update progress for word" });
+    }
+  });
+
   app.post("/api/progress", async (req, res) => {
     try {
       const validation = insertUserProgressSchema.safeParse(req.body);

@@ -19,6 +19,7 @@ export interface IStorage {
   getUserProgressForWord(wordId: string, userId?: string): Promise<UserProgress | undefined>;
   createUserProgress(progress: InsertUserProgress): Promise<UserProgress>;
   updateUserProgress(id: string, progress: Partial<UserProgress>): Promise<UserProgress | undefined>;
+  createOrUpdateUserProgressForWord(wordId: string, userId: string, correct: boolean): Promise<UserProgress>;
   
   // Learning sessions
   getLearningSession(id: string): Promise<LearningSession | undefined>;
@@ -186,6 +187,38 @@ export class MemStorage implements IStorage {
 
   async getUserProgressForWord(wordId: string, userId = "default_user"): Promise<UserProgress | undefined> {
     return Array.from(this.userProgress.values()).find(p => p.wordId === wordId && p.userId === userId);
+  }
+
+  async createOrUpdateUserProgressForWord(wordId: string, userId: string, correct: boolean): Promise<UserProgress> {
+    const existing = await this.getUserProgressForWord(wordId, userId);
+    
+    if (existing) {
+      // Update existing progress
+      const updates = {
+        correctCount: (existing.correctCount || 0) + (correct ? 1 : 0),
+        incorrectCount: (existing.incorrectCount || 0) + (correct ? 0 : 1),
+        lastReviewed: new Date(),
+        nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)),
+        easeFactor: correct ? Math.min((existing.easeFactor || 250) + 10, 300) : Math.max((existing.easeFactor || 250) - 20, 130),
+        interval: correct ? (existing.interval || 1) + 1 : 1,
+        level: correct ? (existing.level || 1) + 1 : Math.max((existing.level || 1) - 1, 1)
+      };
+      
+      return await this.updateUserProgress(existing.id, updates) || existing;
+    } else {
+      // Create new progress
+      return await this.createUserProgress({
+        wordId,
+        userId,
+        level: 1,
+        correctCount: correct ? 1 : 0,
+        incorrectCount: correct ? 0 : 1,
+        lastReviewed: new Date(),
+        nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)),
+        easeFactor: correct ? 250 : 200,
+        interval: correct ? 1 : 0
+      });
+    }
   }
 
   async createUserProgress(insertProgress: InsertUserProgress): Promise<UserProgress> {
@@ -676,6 +709,40 @@ export class DatabaseStorage implements IStorage {
       total: stats.total,
       percentage: Math.round((stats.learned / stats.total) * 100)
     }));
+  }
+
+  async createOrUpdateUserProgressForWord(wordId: string, userId: string, correct: boolean): Promise<UserProgress> {
+    const existing = await this.getUserProgressForWord(wordId, userId);
+    
+    if (existing) {
+      // Update existing progress
+      const updates = {
+        correctCount: (existing.correctCount || 0) + (correct ? 1 : 0),
+        incorrectCount: (existing.incorrectCount || 0) + (correct ? 0 : 1),
+        lastReviewed: new Date(),
+        nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)),
+        easeFactor: correct ? Math.min((existing.easeFactor || 250) + 10, 300) : Math.max((existing.easeFactor || 250) - 20, 130),
+        interval: correct ? (existing.interval || 1) + 1 : 1,
+        level: correct ? (existing.level || 1) + 1 : Math.max((existing.level || 1) - 1, 1)
+      };
+      
+      const [updated] = await db.update(userProgress).set(updates).where(eq(userProgress.id, existing.id)).returning();
+      return updated;
+    } else {
+      // Create new progress
+      const [created] = await db.insert(userProgress).values({
+        wordId,
+        userId,
+        level: 1,
+        correctCount: correct ? 1 : 0,
+        incorrectCount: correct ? 0 : 1,
+        lastReviewed: new Date(),
+        nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)),
+        easeFactor: correct ? 250 : 200,
+        interval: correct ? 1 : 0
+      }).returning();
+      return created;
+    }
   }
 
   private calculateStreak(sessions: LearningSession[]): number {

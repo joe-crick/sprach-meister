@@ -34,10 +34,10 @@ export default function Learn() {
 
   // Then fetch words using the user's preferred session size
   const { data: wordsForLearning, isLoading } = useQuery<VocabularyWordWithProgress[]>({
-    queryKey: ["/api/vocabulary/words-for-learning", settings?.newWordsPerSession],
+    queryKey: ["/api/words/for-learning", settings?.newWordsPerSession],
     queryFn: async () => {
       const limit = settings?.newWordsPerSession || 10;
-      const response = await fetch(`/api/vocabulary/words-for-learning?limit=${limit}`, { credentials: "include" });
+      const response = await fetch(`/api/words/for-learning?limit=${limit}`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for learning");
       return response.json();
     },
@@ -58,18 +58,11 @@ export default function Learn() {
     }
   });
 
-  const createProgressMutation = useMutation({
+  const createOrUpdateProgressMutation = useMutation({
     mutationFn: async ({ wordId, correct }: { wordId: string; correct: boolean }) => {
-      const response = await apiRequest("POST", "/api/progress", {
-        wordId,
+      const response = await apiRequest("POST", `/api/progress/word/${wordId}`, {
         userId: "default_user",
-        level: 1,
-        correctCount: correct ? 1 : 0,
-        incorrectCount: correct ? 0 : 1,
-        lastReviewed: new Date().toISOString(),
-        nextReview: new Date(Date.now() + (correct ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000)).toISOString(), // 1 day if correct, 12 hours if incorrect
-        easeFactor: correct ? 250 : 200,
-        interval: correct ? 1 : 0
+        correct
       });
       return response.json();
     }
@@ -161,7 +154,7 @@ export default function Learn() {
 
     if (wordQueue.length > 0) {
       const currentItem = wordQueue[currentWordIndex];
-      createProgressMutation.mutate({ 
+      createOrUpdateProgressMutation.mutate({ 
         wordId: currentItem.word.id, 
         correct 
       });
@@ -189,6 +182,8 @@ export default function Learn() {
       });
       
       queryClient.invalidateQueries({ queryKey: ["/api/words/for-learning"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vocabulary"] });
     }
   };
 
