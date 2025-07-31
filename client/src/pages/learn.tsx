@@ -87,59 +87,54 @@ export default function Learn() {
     }
   }, [wordsForLearning, sessionId]);
 
-  // Create interleaved queue: present each word once, then test each word exactly 3 times randomly
+  // Create two-phase learning queue: Phase 1 = present all words, Phase 2 = test randomly
   const createInterleavedQueue = (words: VocabularyWordWithProgress[]): Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> => {
     const queue: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> = [];
-    const testCounts = new Map<string, number>(); // Track how many times each word has been tested
     
-    // Initialize test counts
-    words.forEach(word => {
-      testCounts.set(word.id, 0);
-    });
-    
-    // Phase 1: Present each word once (initial learning)
-    words.forEach(word => {
+    console.log('=== PHASE 1: PRESENTATION ===');
+    // Phase 1: Present each word once for learning
+    words.forEach((word, index) => {
       queue.push({
         word,
         isFirstTime: true,
         exerciseType: 'presentation'
       });
-      console.log(`Present: ${word.german} (first time)`);
+      console.log(`${index + 1}. Present: ${word.german} → ${word.english}`);
     });
     
-    // Phase 2: Test each word exactly 3 times, randomly interspersed
+    console.log('\n=== PHASE 2: TESTING ===');
+    // Phase 2: Create random tests (at least 3 per word)
     const testExercises: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> = [];
     
     // Create 3 test exercises for each word
-    for (let testRound = 1; testRound <= 3; testRound++) {
-      words.forEach(word => {
+    words.forEach(word => {
+      for (let i = 0; i < 3; i++) {
         testExercises.push({
           word,
           isFirstTime: false,
           exerciseType: 'test'
         });
-      });
-    }
+      }
+    });
     
-    // Shuffle the test exercises randomly
+    // Shuffle all test exercises randomly
     for (let i = testExercises.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [testExercises[i], testExercises[j]] = [testExercises[j], testExercises[i]];
     }
     
-    // Add shuffled tests to queue
+    // Add randomized tests to queue
     testExercises.forEach((exercise, index) => {
       queue.push(exercise);
-      const currentTestCount = testCounts.get(exercise.word.id)! + 1;
-      testCounts.set(exercise.word.id, currentTestCount);
-      console.log(`Test ${index + 1}: ${exercise.word.german} (test #${currentTestCount})`);
+      console.log(`${index + 1}. Test: ${exercise.word.german}`);
     });
     
-    setWordPresentationCount(new Map(words.map(w => [w.id, 1]))); // Each word presented once
+    setWordPresentationCount(new Map(words.map(w => [w.id, 1])));
     
-    console.log('Interleaved learning session:');
-    console.log(`Total exercises: ${queue.length} (${words.length} words × 4 exercises each)`);
-    console.log(`1 presentation + 3 tests per word`);
+    console.log(`\n📚 Learning Session Created:`);
+    console.log(`Phase 1: ${words.length} presentations`);
+    console.log(`Phase 2: ${testExercises.length} random tests`);
+    console.log(`Total: ${queue.length} exercises`);
     
     return queue;
   };
@@ -291,8 +286,16 @@ export default function Learn() {
                   <X className="h-5 w-5" />
                 </Button>
               </Link>
-              <div className="text-sm text-gray-600">
-                Interleaved Learning
+              <div className="flex flex-col">
+                <div className="text-sm text-gray-600">
+                  Two-Phase Learning
+                </div>
+                <div className="text-xs font-medium text-blue-600">
+                  {currentItem.exerciseType === 'presentation' ? 
+                    `📚 Phase 1: Learning (${currentWordIndex + 1}/${wordsForLearning?.length})` : 
+                    `🧠 Phase 2: Testing (${currentWordIndex + 1 - (wordsForLearning?.length || 0)}/${(wordsForLearning?.length || 0) * 3})`
+                  }
+                </div>
               </div>
             </div>
             <div className="text-sm text-gray-600">
