@@ -47,11 +47,17 @@ export default function Vocabulary() {
         credentials: 'include',
       });
       
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to upload CSV');
+        // Throw an error with the server's detailed error message
+        const error = new Error(result.message || 'Failed to upload CSV');
+        (error as any).details = result.details;
+        (error as any).errors = result.errors;
+        throw error;
       }
       
-      return response.json();
+      return result;
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -62,16 +68,36 @@ export default function Vocabulary() {
         });
       } else {
         toast({
-          title: "Error",
+          title: "Upload Error",
           description: result.message,
           variant: "destructive",
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = error.message || "Failed to upload CSV file";
+      
+      // If we have detailed error information, format it nicely
+      if (error.details || error.errors) {
+        let detailedMessage = errorMessage;
+        
+        if (error.details) {
+          detailedMessage += "\n\n" + error.details;
+        }
+        
+        if (error.errors && Array.isArray(error.errors)) {
+          detailedMessage += "\n\nSpecific errors:\n" + error.errors.slice(0, 5).join("\n");
+          if (error.errors.length > 5) {
+            detailedMessage += `\n... and ${error.errors.length - 5} more errors`;
+          }
+        }
+        
+        errorMessage = detailedMessage;
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to upload CSV file",
+        title: "CSV Upload Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }

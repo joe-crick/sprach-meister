@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertVocabularyWordSchema, insertUserProgressSchema, insertLearningSessionSchema, insertUserSettingsSchema } from "@shared/schema";
-import { generateVocabulary, generateMemoryTip, validateGrammarExplanation, type GrammarExplanation, type VocabularyWord } from "./services/anthropic";
+import { explainGrammarTopic, generateGrammarExercises } from "./services/anthropic";
 import multer from "multer";
 import Papa from "papaparse";
 
@@ -349,44 +349,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI vocabulary generation
+  // AI vocabulary generation (simplified - remove for now)
   app.post("/api/vocabulary/ai-generate", async (req, res) => {
     try {
-      const schema = z.object({
-        topic: z.string(),
-        count: z.number().min(1).max(50),
-        level: z.string().default("B1")
+      res.status(501).json({ 
+        message: "AI vocabulary generation temporarily unavailable",
+        details: "This feature is being updated. Please use manual word entry or CSV upload for now."
       });
-
-      const validation = schema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({ message: "Invalid request data", errors: validation.error.errors });
-      }
-
-      const { topic, count, level } = validation.data;
-      const generatedWords = await generateVocabulary(topic, level, count);
-      
-      const wordsToCreate = generatedWords.map(word => ({
-        german: word.german,
-        article: word.article,
-        english: word.english,
-        category: word.category,
-        wordType: word.wordType,
-        example: word.example,
-        memoryTip: word.memoryTip
-      }));
-
-      const createdWords = await storage.createVocabularyWords(wordsToCreate);
-      const duplicatesSkipped = wordsToCreate.length - createdWords.length;
-      
-      let message = `${createdWords.length} words generated and added`;
-      if (duplicatesSkipped > 0) {
-        message += ` (${duplicatesSkipped} duplicates skipped)`;
-      }
-      
-      res.status(201).json({ message, words: createdWords });
     } catch (error) {
-      res.status(500).json({ message: "Failed to generate vocabulary with AI" });
+      res.status(500).json({ message: "Failed to generate vocabulary" });
     }
   });
 
@@ -542,28 +513,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Grammar validation route
-  app.post("/api/grammar/validate", async (req, res) => {
+  // Grammar explanation route
+  app.post("/api/grammar/explain", async (req, res) => {
     try {
-      const { topic, explanation, examples, rules } = req.body;
+      const { topic, language } = req.body;
       
-      if (!topic || !explanation) {
-        return res.status(400).json({ message: "Topic and explanation are required" });
+      if (!topic) {
+        return res.status(400).json({ message: "Topic is required" });
       }
 
-      const feedback = await validateGrammarExplanation({
-        topic,
-        explanation,
-        examples: examples || [],
-        rules: rules || []
-      });
-
-      res.json(feedback);
+      const explanation = await explainGrammarTopic(topic, language || 'english');
+      res.json({ explanation });
     } catch (error: any) {
-      console.error('Grammar validation error:', error);
+      console.error('Grammar explanation error:', error);
+      const errorMessage = error.message || "Failed to generate grammar explanation";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  // Grammar exercises route
+  app.post("/api/grammar/exercises", async (req, res) => {
+    try {
+      const { topic, language } = req.body;
       
-      // Return specific error message from OpenAI service
-      const errorMessage = error.message || "Failed to validate grammar explanation";
+      if (!topic) {
+        return res.status(400).json({ message: "Topic is required" });
+      }
+
+      const exercises = await generateGrammarExercises(topic, language || 'english');
+      res.json({ exercises });
+    } catch (error: any) {
+      console.error('Grammar exercises error:', error);
+      const errorMessage = error.message || "Failed to generate grammar exercises";
       res.status(500).json({ message: errorMessage });
     }
   });
