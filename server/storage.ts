@@ -624,6 +624,27 @@ export class DatabaseStorage implements IStorage {
     return learnedWords.slice(0, limit);
   }
 
+  async getAllWordsForReview(userId = "default_user", limit = 25): Promise<VocabularyWordWithProgress[]> {
+    const allWords = await this.getVocabularyWordsWithProgress(userId);
+    
+    // Get words that have been learned (have progress) and randomize them
+    const learnedWords = allWords
+      .filter(word => word.progress?.lastReviewed)
+      .sort(() => Math.random() - 0.5); // Randomize the order
+    
+    // If we don't have enough learned words, include some unlearned words
+    if (learnedWords.length < limit) {
+      const unlearnedWords = allWords
+        .filter(word => !word.progress?.lastReviewed)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, limit - learnedWords.length);
+      
+      return [...learnedWords, ...unlearnedWords].slice(0, limit);
+    }
+    
+    return learnedWords.slice(0, limit);
+  }
+
   async getWordsForLearning(userId = "default_user", limit = 10): Promise<VocabularyWordWithProgress[]> {
     const allWords = await this.getVocabularyWordsWithProgress(userId);
     
