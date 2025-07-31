@@ -16,7 +16,8 @@ export default function Learn() {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalAnswers, setTotalAnswers] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [wordQueue, setWordQueue] = useState<Array<{word: VocabularyWordWithProgress, isFirstTime: boolean}>>([]);
+  const [wordQueue, setWordQueue] = useState<Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}>>([]);
+  const [wordPresentationCount, setWordPresentationCount] = useState<Map<string, number>>(new Map());
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -86,42 +87,86 @@ export default function Learn() {
     }
   }, [wordsForLearning, sessionId]);
 
-  // Create interleaved queue like Memrise: ensures each word appears multiple times
-  const createInterleavedQueue = (words: VocabularyWordWithProgress[]): Array<{word: VocabularyWordWithProgress, isFirstTime: boolean}> => {
-    const queue: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean}> = [];
+  // Create sophisticated interleaved queue that tests words after 3+ presentations
+  const createInterleavedQueue = (words: VocabularyWordWithProgress[]): Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> => {
+    const queue: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> = [];
+    const presentationCounts = new Map<string, number>();
+    const availableForTesting = new Set<string>();
     
-    // Memrise-style algorithm: each word appears 4 times
-    // 1st time: presentation + test
-    // 2nd, 3rd, 4th times: just test (with increasing spacing)
-    
-    // First, add all words for initial learning (presentation + test)
+    // Initialize presentation counts
     words.forEach(word => {
-      queue.push({ word, isFirstTime: true });
+      presentationCounts.set(word.id, 0);
     });
     
-    // Then add review tests with intelligent spacing
-    const reviewRounds = 3; // Additional review attempts per word
+    // Algorithm: Present words, then randomly test words that have been shown 3+ times
+    const totalExercises = words.length * 6; // Each word will be encountered ~6 times
+    let wordsToPresent = [...words];
     
-    for (let round = 1; round <= reviewRounds; round++) {
-      words.forEach((word, wordIndex) => {
-        // Calculate where to insert this review based on spacing algorithm
-        // Early reviews come sooner, later reviews have more spacing
-        const minGap = Math.max(2, round); // At least 2-3 words between reviews
-        const idealPosition = queue.length + (wordIndex * minGap);
+    for (let exerciseIndex = 0; exerciseIndex < totalExercises; exerciseIndex++) {
+      // Decide whether to present a new word or test an already presented word
+      const canTest = availableForTesting.size > 0;
+      const shouldTest = canTest && Math.random() < 0.4; // 40% chance to test if words are available
+      
+      if (shouldTest && availableForTesting.size > 0) {
+        // Test a random word that's available for testing
+        const availableWords = Array.from(availableForTesting);
+        const randomIndex = Math.floor(Math.random() * availableWords.length);
+        const wordIdToTest = availableWords[randomIndex];
+        const wordToTest = words.find(w => w.id === wordIdToTest)!;
         
-        // Insert the review test
-        queue.splice(Math.min(idealPosition, queue.length), 0, { 
-          word, 
-          isFirstTime: false 
+        queue.push({
+          word: wordToTest, 
+          isFirstTime: false,
+          exerciseType: 'test'
         });
-      });
+        console.log(`Exercise ${exerciseIndex + 1}: TEST ${wordToTest.german} (presented ${presentationCounts.get(wordIdToTest)} times)`);
+      } else if (wordsToPresent.length > 0) {
+        // Present a new word (or re-present an existing word)
+        const wordIndex = exerciseIndex % words.length;
+        const wordToPresent = words[wordIndex];
+        const currentCount = presentationCounts.get(wordToPresent.id) || 0;
+        const isFirstTime = currentCount === 0;
+        
+        queue.push({
+          word: wordToPresent,
+          isFirstTime,
+          exerciseType: 'presentation'
+        });
+        
+        // Update presentation count
+        const newCount = currentCount + 1;
+        presentationCounts.set(wordToPresent.id, newCount);
+        
+        // Add to available for testing if presented 3+ times
+        if (newCount >= 3) {
+          availableForTesting.add(wordToPresent.id);
+        }
+        
+        console.log(`Exercise ${exerciseIndex + 1}: PRESENT ${wordToPresent.german} (${isFirstTime ? 'first time' : `${newCount}th time`})`);
+      } else {
+        // Fallback: test any available word
+        if (availableForTesting.size > 0) {
+          const availableWords = Array.from(availableForTesting);
+          const randomIndex = Math.floor(Math.random() * availableWords.length);
+          const wordIdToTest = availableWords[randomIndex];
+          const wordToTest = words.find(w => w.id === wordIdToTest)!;
+          
+          queue.push({
+            word: wordToTest, 
+            isFirstTime: false,
+            exerciseType: 'test'
+          });
+          console.log(`Exercise ${exerciseIndex + 1}: FALLBACK TEST ${wordToTest.german}`);
+        }
+      }
     }
     
-    console.log('Memrise-style queue created:');
-    queue.forEach((item, i) => {
-      console.log(`${i + 1}: ${item.word.german} (${item.isFirstTime ? 'LEARN' : 'TEST'})`);
-    });
+    // Store the presentation counts for the component
+    setWordPresentationCount(presentationCounts);
+    
+    console.log('Advanced interleaved queue created:');
     console.log(`Total exercises: ${queue.length}, Unique words: ${words.length}`);
+    console.log('Presentation counts:', Object.fromEntries(presentationCounts));
     
     return queue;
   };
@@ -291,6 +336,7 @@ export default function Learn() {
           <InterleavedLearnExercise 
             word={currentItem.word} 
             isFirstTime={currentItem.isFirstTime}
+            exerciseType={currentItem.exerciseType}
             onAnswer={handleAnswer}
             onNext={handleNext}
             exerciseNumber={currentWordIndex + 1}

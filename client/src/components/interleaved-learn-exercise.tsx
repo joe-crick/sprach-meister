@@ -10,6 +10,7 @@ import { GermanWordAudioButton, SentenceAudioButton } from "@/components/audio-b
 interface InterleavedLearnExerciseProps {
   word: VocabularyWordWithProgress;
   isFirstTime: boolean;
+  exerciseType: 'presentation' | 'test';
   onAnswer: (correct: boolean, userAnswer: string) => void;
   onNext: () => void;
   exerciseNumber: number;
@@ -21,21 +22,24 @@ type ExercisePhase = "presentation" | "test" | "feedback";
 export default function InterleavedLearnExercise({ 
   word, 
   isFirstTime,
+  exerciseType,
   onAnswer, 
   onNext, 
   exerciseNumber, 
   totalExercises 
 }: InterleavedLearnExerciseProps) {
-  // Start with presentation only for first-time words, go straight to test for reviews
-  const [phase, setPhase] = useState<ExercisePhase>(isFirstTime ? "presentation" : "test");
+  // Use the exercise type from the queue to determine starting phase
+  const [phase, setPhase] = useState<ExercisePhase>(exerciseType === 'presentation' ? "presentation" : "test");
   const [userAnswer, setUserAnswer] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
 
   // Reset component state when word changes (important for the queue system)
   const [lastWordId, setLastWordId] = useState(word.id);
-  if (word.id !== lastWordId) {
+  const [lastExerciseType, setLastExerciseType] = useState(exerciseType);
+  if (word.id !== lastWordId || exerciseType !== lastExerciseType) {
     setLastWordId(word.id);
-    setPhase(isFirstTime ? "presentation" : "test");
+    setLastExerciseType(exerciseType);
+    setPhase(exerciseType === 'presentation' ? "presentation" : "test");
     setUserAnswer("");
     setIsCorrect(false);
   }
