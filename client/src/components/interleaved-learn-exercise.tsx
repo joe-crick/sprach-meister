@@ -85,7 +85,9 @@ export default function InterleavedLearnExercise({
   };
 
   const handleContinueFromPresentation = () => {
-    setPhase("test");
+    // In two-phase learning, presentation exercises just move to next word
+    // Testing happens in separate exercises in the queue
+    onNext();
   };
 
   const handleSubmitAnswer = () => {
