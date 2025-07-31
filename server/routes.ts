@@ -504,33 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Settings routes
-  app.get("/api/settings", async (req, res) => {
-    try {
-      const userId = req.query.userId as string || "default_user";
-      const settings = await storage.getUserSettings(userId);
-      if (!settings) {
-        return res.status(404).json({ message: "Settings not found" });
-      }
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch settings" });
-    }
-  });
 
-  app.put("/api/settings", async (req, res) => {
-    try {
-      const userId = req.body.userId || "default_user";
-      const updates = insertUserSettingsSchema.partial().parse(req.body);
-      const settings = await storage.updateUserSettings(userId, updates);
-      if (!settings) {
-        return res.status(404).json({ message: "Settings not found" });
-      }
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update settings" });
-    }
-  });
 
   // Dashboard and analytics routes
   app.get("/api/dashboard/stats", async (req, res) => {
