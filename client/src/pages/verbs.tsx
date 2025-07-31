@@ -119,16 +119,24 @@ export default function Verbs() {
   });
 
   // Create combined verb list
+  const vocabularyVerbs = vocabularyWords
+    .filter((word: any) => {
+      console.log('Checking word:', word.german, 'wordType:', word.wordType);
+      return word.wordType === 'verb';
+    })
+    .map((word: any) => ({
+      infinitive: word.german,
+      english: word.english,
+      category: 'regular', // Assume regular unless specified
+      forms: generateRegularVerbConjugation(word.german)
+    }));
+
+  console.log('Vocabulary verbs found:', vocabularyVerbs.length);
+  console.log('Total vocabulary words:', vocabularyWords.length);
+
   const availableVerbs: Verb[] = [
     ...ESSENTIAL_VERBS,
-    ...vocabularyWords
-      .filter((word: any) => word.wordType === 'verb')
-      .map((word: any) => ({
-        infinitive: word.german,
-        english: word.english,
-        category: 'regular', // Assume regular unless specified
-        forms: generateRegularVerbConjugation(word.german)
-      }))
+    ...vocabularyVerbs
   ];
 
   const generateExercise = () => {
