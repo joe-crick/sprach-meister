@@ -53,7 +53,7 @@ Keep it understandable and not too technical.`;
       ],
     });
 
-    return response.content[0].text;
+    return (response.content[0] as any).text;
   } catch (error) {
     console.error('Error explaining grammar topic:', error);
     throw new Error('Failed to generate grammar explanation');
@@ -77,11 +77,14 @@ Difficulty level: ${difficulty}
 ${difficultyInstructions[difficulty as keyof typeof difficultyInstructions] || difficultyInstructions.intermediate}
 
 Requirements:
-1. The prompt should be engaging and contextual
-2. Encourage use of ALL provided words
-3. Specify any particular grammar focus (cases, verb position, etc.)
-4. Make it realistic and practical for B1 learners
-5. Keep instructions clear and concise
+1. Ask the student to create 4 SEPARATE sentences, using one word from the list in each sentence
+2. The prompt should be engaging and contextual
+3. Each sentence should demonstrate proper German grammar
+4. Specify any particular grammar focus (cases, verb position, etc.)
+5. Make it realistic and practical for B1 learners
+6. Keep instructions clear and concise
+
+Important: Students should write 4 individual sentences, NOT one long sentence with all words.
 
 Provide ONLY the prompt text, no additional explanation.`;
 
@@ -95,7 +98,7 @@ Provide ONLY the prompt text, no additional explanation.`;
       ],
     });
 
-    return response.content[0].text;
+    return (response.content[0] as any).text;
   } catch (error) {
     console.error('Error generating sentence prompt:', error);
     throw new Error('Failed to generate sentence practice prompt');
@@ -116,9 +119,9 @@ Always respond in valid JSON format with these exact fields:
   "vocabularyUsage": ["array", "of", "vocabulary", "usage", "notes"]
 }`;
 
-  const userPrompt = `Evaluate this German sentence written by a B1 student:
+  const userPrompt = `Evaluate this German text written by a B1 student (may contain multiple sentences):
 
-Student's sentence: "${sentence}"
+Student's text: "${sentence}"
 Required words to use: ${wordList}
 Original prompt: "${prompt}"
 
@@ -127,8 +130,9 @@ Please evaluate:
 2. Vocabulary usage (are required words used correctly?)
 3. Sentence structure and flow
 4. Overall appropriateness for B1 level
+5. If multiple sentences were requested, check that each sentence uses vocabulary appropriately
 
-Provide encouraging feedback even for incorrect attempts. If the sentence needs correction, provide a corrected version. Focus on the most important 2-3 learning points.`;
+Provide encouraging feedback even for incorrect attempts. If the text needs correction, provide a corrected version. Focus on the most important 2-3 learning points.`;
 
   try {
     const response = await anthropic.messages.create({
@@ -140,7 +144,7 @@ Provide encouraging feedback even for incorrect attempts. If the sentence needs 
       ],
     });
 
-    return JSON.parse(response.content[0].text);
+    return JSON.parse((response.content[0] as any).text);
   } catch (error) {
     console.error('Error evaluating sentence:', error);
     throw new Error('Failed to evaluate sentence');
@@ -175,7 +179,7 @@ Provide ONLY the prompt text that explains what grammar concept to focus on and 
       ],
     });
 
-    return response.content[0].text;
+    return (response.content[0] as any).text;
   } catch (error) {
     console.error('Error generating grammar sentence prompt:', error);
     throw new Error('Failed to generate grammar-focused sentence prompt');
@@ -221,7 +225,7 @@ Keep it practical and at B1 level.`;
       ],
     });
 
-    return response.content[0].text;
+    return (response.content[0] as any).text;
   } catch (error) {
     console.error('Error generating grammar exercises:', error);
     throw new Error('Failed to generate grammar exercises');

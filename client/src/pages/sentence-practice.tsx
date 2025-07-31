@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { GermanWordAudioButton } from "@/components/audio-button";
 import { CheckCircle2, XCircle, RefreshCw, PenTool, Lightbulb, Target, BookOpen, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ReactMarkdown from "react-markdown";
 
 interface SentencePracticeExercise {
   words: VocabularyWordWithProgress[];
@@ -320,15 +321,15 @@ export default function SentencePractice() {
             {/* Exercise Prompt */}
             <Alert>
               <Lightbulb className="h-4 w-4" />
-              <AlertDescription className="text-base">
-                {currentExercise.prompt}
+              <AlertDescription className="text-base prose prose-sm max-w-none">
+                <ReactMarkdown>{currentExercise.prompt}</ReactMarkdown>
               </AlertDescription>
             </Alert>
 
             {/* Words to Use */}
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Use these words in your sentence:
+                Use these words (create 4 separate sentences, one word per sentence):
               </h3>
               <div className="flex flex-wrap gap-3">
                 {currentExercise.words.map((word, index) => (
@@ -347,7 +348,7 @@ export default function SentencePractice() {
                     </div>
                     <GermanWordAudioButton 
                       german={word.german} 
-                      article={word.article || ""} 
+                      article={word.article || undefined} 
                       size="sm"
                     />
                   </div>
@@ -358,13 +359,13 @@ export default function SentencePractice() {
             {/* Sentence Input */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Your German sentence:
+                Your German sentences (write 4 separate sentences):
               </label>
               <Textarea
                 value={userSentence}
                 onChange={(e) => setUserSentence(e.target.value)}
-                placeholder="Write your sentence here using the words above..."
-                className="min-h-[100px]"
+                placeholder="Write 4 separate sentences here, using one word from the list in each sentence..."
+                className="min-h-[150px]"
                 disabled={isSubmitting}
               />
               <div className="flex gap-2">
