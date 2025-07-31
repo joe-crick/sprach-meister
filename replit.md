@@ -89,6 +89,7 @@ Preferred communication style: Simple, everyday language.
 - **Anthropic Claude API**: Claude Sonnet 4 model for vocabulary generation, memory tips, and grammar validation
 - **Integration**: Environment variable configuration for ANTHROPIC_API_KEY
 - **Fallback**: Error handling for API failures with specific error messages
+- **Note**: OpenAI integration removed as requested - all AI functionality now uses Anthropic only
 
 ### Database Services
 - **Neon Database**: Serverless PostgreSQL hosting
@@ -127,7 +128,15 @@ Preferred communication style: Simple, everyday language.
 - **Caching Strategy**: TanStack Query provides client-side caching
 - **Database Optimization**: Indexed queries for vocabulary and progress lookups
 
-## Recent Changes (January 2025)
+## Recent Changes (July 2025)
+
+### OpenAI Removal (July 31, 2025)
+- **Removed OpenAI Integration**: All OpenAI dependencies and services removed from codebase
+- **Anthropic Only**: Grammar validation, vocabulary generation, and memory tips now exclusively use Anthropic Claude
+- **Package Cleanup**: Uninstalled openai npm package and removed related service files
+- **CSV Processing**: Updated to use backend API endpoints instead of client-side OpenAI functions
+
+## Previous Changes (January 2025)
 
 ### Multi-Word Type Support
 - **Enhanced Schema**: Added `wordType` field supporting noun, verb, adjective, adverb, expression, phrase, other

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Upload, Brain, Search, Edit, PlayCircle, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AddWordModal from "@/components/add-word-modal";
-import { generateVocabulary, processCsvFile } from "@/lib/openai";
+// AI functionality now handled by Anthropic service on backend
 import { GermanWordAudioButton } from "@/components/audio-button";
 
 export default function Vocabulary() {
@@ -38,7 +38,20 @@ export default function Vocabulary() {
 
   const uploadCsvMutation = useMutation({
     mutationFn: async (file: File) => {
-      return await processCsvFile(file);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/vocabulary/upload-csv', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload CSV');
+      }
+      
+      return response.json();
     },
     onSuccess: (result) => {
       if (result.success) {
