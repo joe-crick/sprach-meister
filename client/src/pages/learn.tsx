@@ -87,7 +87,7 @@ export default function Learn() {
     }
   }, [wordsForLearning, sessionId]);
 
-  // Create interleaved queue: present each word, then test each word exactly 3 times randomly
+  // Create interleaved queue: present each word once, then test each word exactly 3 times randomly
   const createInterleavedQueue = (words: VocabularyWordWithProgress[]): Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> => {
     const queue: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> = [];
     const testCounts = new Map<string, number>(); // Track how many times each word has been tested
@@ -107,19 +107,7 @@ export default function Learn() {
       console.log(`Present: ${word.german} (first time)`);
     });
     
-    // Phase 2: Present each word 2 more times (total 3 presentations per word)
-    for (let round = 2; round <= 3; round++) {
-      words.forEach(word => {
-        queue.push({
-          word,
-          isFirstTime: false,
-          exerciseType: 'presentation'
-        });
-        console.log(`Present: ${word.german} (${round}${round === 2 ? 'nd' : 'rd'} time)`);
-      });
-    }
-    
-    // Phase 3: Test each word exactly 3 times, randomly interspersed
+    // Phase 2: Test each word exactly 3 times, randomly interspersed
     const testExercises: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> = [];
     
     // Create 3 test exercises for each word
@@ -147,11 +135,11 @@ export default function Learn() {
       console.log(`Test ${index + 1}: ${exercise.word.german} (test #${currentTestCount})`);
     });
     
-    setWordPresentationCount(new Map(words.map(w => [w.id, 3]))); // Each word presented 3 times
+    setWordPresentationCount(new Map(words.map(w => [w.id, 1]))); // Each word presented once
     
     console.log('Interleaved learning session:');
-    console.log(`Total exercises: ${queue.length} (${words.length} words × 6 exercises each)`);
-    console.log(`3 presentations + 3 tests per word`);
+    console.log(`Total exercises: ${queue.length} (${words.length} words × 4 exercises each)`);
+    console.log(`1 presentation + 3 tests per word`);
     
     return queue;
   };
