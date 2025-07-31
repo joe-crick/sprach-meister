@@ -12,11 +12,11 @@ import { UserSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useAudio } from "@/lib/audio";
 import { GermanWordAudioButton } from "@/components/audio-button";
-import { Globe, MessageCircle, Clock } from "lucide-react";
+import { Globe, MessageCircle, Clock, Bell, Smartphone } from "lucide-react";
 
 export default function Settings() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -37,12 +37,12 @@ export default function Settings() {
     },
   });
 
-  // Initialize whatsapp number when settings load
+  // Initialize phone number when settings load
   useEffect(() => {
-    if (settings?.whatsappNumber) {
-      setWhatsappNumber(settings.whatsappNumber);
+    if (settings?.phoneNumber) {
+      setPhoneNumber(settings.phoneNumber);
     }
-  }, [settings?.whatsappNumber]);
+  }, [settings?.phoneNumber]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Partial<UserSettings>) => {
@@ -146,46 +146,49 @@ export default function Settings() {
     }
   };
 
-  const handleSaveWhatsappNumber = () => {
+  const handleSavePhoneNumber = () => {
     if (!settings) return;
     
-    updateSettingsMutation.mutate({ whatsappNumber: whatsappNumber });
+    updateSettingsMutation.mutate({ phoneNumber: phoneNumber });
   };
 
-  const testWhatsappMutation = useMutation({
-    mutationFn: async (phoneNumber: string) => {
-      const response = await apiRequest("POST", "/api/settings/test-whatsapp", { 
-        phoneNumber: phoneNumber 
+  const testNotificationMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/settings/test-notification", { 
+        phoneNumber: phoneNumber || settings?.phoneNumber 
       });
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Test Message Sent!",
-        description: "Check your WhatsApp for the test message. If you don't receive it, please verify your phone number.",
+        title: "Test Notification Sent!",
+        description: "Check your browser notifications and SMS log. This simulates how reminders will work.",
       });
     },
     onError: () => {
       toast({
         title: "Test Failed",
-        description: "Failed to send test message. Please check your phone number and try again.",
+        description: "Failed to send test notification. Please try again.",
         variant: "destructive",
       });
     }
   });
 
-  const handleTestWhatsapp = () => {
-    const phoneToTest = whatsappNumber || settings?.whatsappNumber;
-    if (!phoneToTest) {
-      toast({
-        title: "No Phone Number",
-        description: "Please enter and save a phone number first.",
-        variant: "destructive",
-      });
-      return;
+  const handleTestNotification = async () => {
+    // Request notification permission first
+    if ('Notification' in window && Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast({
+          title: "Notification Permission Denied",
+          description: "Please enable browser notifications to receive reminders.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
-    testWhatsappMutation.mutate(phoneToTest);
+    testNotificationMutation.mutate();
   };
 
   if (isLoading) {
