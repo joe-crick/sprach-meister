@@ -36,8 +36,8 @@ const VERB_FORMS = {
   }
 };
 
-// Sample German verbs with their conjugations
-const SAMPLE_VERBS = [
+// Essential German verbs with their conjugations
+const ESSENTIAL_VERBS = [
   {
     infinitive: "sein",
     english: "to be",
@@ -59,55 +59,37 @@ const SAMPLE_VERBS = [
       perfect: ["habe gehabt", "hast gehabt", "hat gehabt", "haben gehabt", "habt gehabt", "haben gehabt"],
       subjunctive: ["hätte", "hättest", "hätte", "hätten", "hättet", "hätten"]
     }
-  },
-  {
-    infinitive: "gehen",
-    english: "to go",
-    category: "strong",
-    forms: {
-      present: ["gehe", "gehst", "geht", "gehen", "geht", "gehen"],
-      preterite: ["ging", "gingst", "ging", "gingen", "gingt", "gingen"],
-      perfect: ["bin gegangen", "bist gegangen", "ist gegangen", "sind gegangen", "seid gegangen", "sind gegangen"],
-      subjunctive: ["ginge", "gingest", "ginge", "gingen", "ginget", "gingen"]
-    }
-  },
-  {
-    infinitive: "machen",
-    english: "to make/do",
-    category: "regular",
-    forms: {
-      present: ["mache", "machst", "macht", "machen", "macht", "machen"],
-      preterite: ["machte", "machtest", "machte", "machten", "machtet", "machten"],
-      perfect: ["habe gemacht", "hast gemacht", "hat gemacht", "haben gemacht", "habt gemacht", "haben gemacht"],
-      subjunctive: ["machte", "machtest", "machte", "machten", "machtet", "machten"]
-    }
-  },
-  {
-    infinitive: "können",
-    english: "can/to be able to",
-    category: "modal",
-    forms: {
-      present: ["kann", "kannst", "kann", "können", "könnt", "können"],
-      preterite: ["konnte", "konntest", "konnte", "konnten", "konntet", "konnten"],
-      perfect: ["habe gekonnt", "hast gekonnt", "hat gekonnt", "haben gekonnt", "habt gekonnt", "haben gekonnt"],
-      subjunctive: ["könnte", "könntest", "könnte", "könnten", "könntet", "könnten"]
-    }
-  },
-  {
-    infinitive: "sprechen",
-    english: "to speak",
-    category: "strong",
-    forms: {
-      present: ["spreche", "sprichst", "spricht", "sprechen", "sprecht", "sprechen"],
-      preterite: ["sprach", "sprachst", "sprach", "sprachen", "spracht", "sprachen"],
-      perfect: ["habe gesprochen", "hast gesprochen", "hat gesprochen", "haben gesprochen", "habt gesprochen", "haben gesprochen"],
-      subjunctive: ["spräche", "sprächest", "spräche", "sprächen", "sprächet", "sprächen"]
-    }
   }
 ];
 
+// Generate verb conjugations for regular German verbs
+const generateRegularVerbConjugation = (infinitive: string, auxiliary: 'haben' | 'sein' = 'haben') => {
+  const stem = infinitive.replace(/(en|n)$/, '');
+  const pastParticiple = infinitive.startsWith('ge') ? infinitive : `ge${stem}t`;
+  const auxVerb = auxiliary === 'haben' ? ['habe', 'hast', 'hat', 'haben', 'habt', 'haben'] : ['bin', 'bist', 'ist', 'sind', 'seid', 'sind'];
+  
+  return {
+    present: [`${stem}e`, `${stem}st`, `${stem}t`, `${stem}en`, `${stem}t`, `${stem}en`],
+    preterite: [`${stem}te`, `${stem}test`, `${stem}te`, `${stem}ten`, `${stem}tet`, `${stem}ten`],
+    perfect: auxVerb.map(aux => `${aux} ${pastParticiple}`),
+    subjunctive: [`${stem}te`, `${stem}test`, `${stem}te`, `${stem}ten`, `${stem}tet`, `${stem}ten`]
+  };
+};
+
+interface Verb {
+  infinitive: string;
+  english: string;
+  category: string;
+  forms: {
+    present: string[];
+    preterite: string[];
+    perfect: string[];
+    subjunctive: string[];
+  };
+}
+
 interface VerbExercise {
-  verb: typeof SAMPLE_VERBS[0];
+  verb: Verb;
   form: keyof typeof VERB_FORMS;
   person: number;
   userAnswer: string;
@@ -126,10 +108,33 @@ export default function Verbs() {
     streak: 0
   });
 
-  const generateExercise = () => {
-    if (!selectedVerb || !selectedForm) return;
+  // Fetch vocabulary words to get verbs
+  const { data: vocabularyWords = [] } = useQuery({
+    queryKey: ['/api/vocabulary'],
+    queryFn: async () => {
+      const response = await fetch('/api/vocabulary');
+      if (!response.ok) throw new Error('Failed to fetch vocabulary');
+      return response.json();
+    }
+  });
 
-    const verb = SAMPLE_VERBS.find(v => v.infinitive === selectedVerb);
+  // Create combined verb list
+  const availableVerbs: Verb[] = [
+    ...ESSENTIAL_VERBS,
+    ...vocabularyWords
+      .filter((word: any) => word.wordType === 'verb')
+      .map((word: any) => ({
+        infinitive: word.german,
+        english: word.english,
+        category: 'regular', // Assume regular unless specified
+        forms: generateRegularVerbConjugation(word.german)
+      }))
+  ];
+
+  const generateExercise = () => {
+    if (!selectedVerb || !selectedForm || availableVerbs.length === 0) return;
+
+    const verb = availableVerbs.find(v => v.infinitive === selectedVerb);
     if (!verb) return;
 
     const randomPerson = Math.floor(Math.random() * 6);
@@ -286,7 +291,7 @@ export default function Verbs() {
                     <SelectValue placeholder="Select a verb to practice" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SAMPLE_VERBS.map((verb) => (
+                    {availableVerbs.map((verb) => (
                       <SelectItem key={verb.infinitive} value={verb.infinitive}>
                         <div className="flex items-center gap-2">
                           <span>{verb.infinitive}</span>
@@ -303,7 +308,7 @@ export default function Verbs() {
 
               <Button 
                 onClick={generateExercise} 
-                disabled={!selectedForm || !selectedVerb}
+                disabled={!selectedForm || !selectedVerb || availableVerbs.length === 0}
                 className="w-full"
               >
                 Start Practice
