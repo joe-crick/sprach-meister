@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertVocabularyWordSchema, insertUserProgressSchema, insertLearningSessionSchema, insertUserSettingsSchema } from "@shared/schema";
-import { generateVocabulary, generateMemoryTip, validateGrammarExplanation } from "./services/openai";
+import { generateVocabulary, generateMemoryTip, validateGrammarExplanation, type GrammarExplanation, type VocabularyWord } from "./services/anthropic";
 import multer from "multer";
 import Papa from "papaparse";
 
@@ -106,16 +106,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!duplicateMap.has(key)) {
           duplicateMap.set(key, []);
         }
-        duplicateMap.get(key)!.push(word);
+        duplicateMap.get(key)!.push(word as any);
       });
       
       let duplicatesRemoved = 0;
       
       // For each group with duplicates, keep the first one and delete the rest
-      for (const [germanWord, duplicates] of duplicateMap.entries()) {
+      const entries = Array.from(duplicateMap.entries());
+      for (const [germanWord, duplicates] of entries) {
         if (duplicates.length > 1) {
           // Sort by creation date, keep the oldest
-          duplicates.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+          duplicates.sort((a: any, b: any) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
           
           // Delete all but the first one
           for (let i = 1; i < duplicates.length; i++) {
@@ -372,16 +373,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data", errors: validation.error.errors });
       }
 
-      const generatedWords = await generateVocabulary(validation.data);
+      const { topic, count, level } = validation.data;
+      const generatedWords = await generateVocabulary(topic, level, count);
       
       const wordsToCreate = generatedWords.map(word => ({
         german: word.german,
         article: word.article,
         english: word.english,
         category: word.category,
-        wordType: "noun" as const,
-        exampleSentence: word.exampleSentence,
-        exampleTranslation: word.exampleTranslation,
+        wordType: word.wordType,
+        example: word.example,
         memoryTip: word.memoryTip
       }));
 

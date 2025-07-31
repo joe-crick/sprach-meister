@@ -86,9 +86,9 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### AI Services
-- **OpenAI API**: GPT-4o model for vocabulary generation and memory tips
-- **Integration**: Environment variable configuration for API key
-- **Fallback**: Error handling for API failures
+- **Anthropic Claude API**: Claude Sonnet 4 model for vocabulary generation, memory tips, and grammar validation
+- **Integration**: Environment variable configuration for ANTHROPIC_API_KEY
+- **Fallback**: Error handling for API failures with specific error messages
 
 ### Database Services
 - **Neon Database**: Serverless PostgreSQL hosting
