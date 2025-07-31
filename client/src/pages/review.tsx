@@ -17,6 +17,7 @@ export default function Review() {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalAnswers, setTotalAnswers] = useState(0);
   const [currentAnswered, setCurrentAnswered] = useState(false);
+  const [currentRound, setCurrentRound] = useState(1);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -132,7 +133,7 @@ export default function Review() {
     if (currentWordIndex < wordsForReview.length - 1) {
       setCurrentWordIndex(currentWordIndex + 1);
     } else {
-      // Session complete
+      // Round complete
       const duration = Math.round((Date.now() - sessionStartTime) / 1000 / 60);
       await updateSessionMutation.mutateAsync({
         completed: true,
@@ -143,15 +144,29 @@ export default function Review() {
 
       const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
       toast({
-        title: "Review Complete!",
-        description: `You scored ${accuracy}% accuracy on ${totalAnswers} questions. Great work!`,
+        title: `Round ${currentRound} Complete!`,
+        description: `You scored ${accuracy}% accuracy on ${totalAnswers} questions. Ready for another round?`,
       });
 
-      // Redirect to dashboard after a short delay
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 2000);
+      // Reset for next round but keep the session going
+      setCurrentRound(currentRound + 1);
+      setCurrentWordIndex(0);
+      setCorrectAnswers(0);
+      setTotalAnswers(0);
+      
+      // Invalidate and refetch words for a new randomized set
+      queryClient.invalidateQueries({ queryKey: ["/api/words/for-review"] });
     }
+  };
+
+  const startNewSession = () => {
+    // Force refetch of words for a fresh session
+    queryClient.invalidateQueries({ queryKey: ["/api/words/for-review"] });
+    setCurrentWordIndex(0);
+    setCorrectAnswers(0);
+    setTotalAnswers(0);
+    setCurrentRound(1);
+    setSessionId(null);
   };
 
   const handleExit = async () => {

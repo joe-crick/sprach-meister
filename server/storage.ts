@@ -319,15 +319,13 @@ export class MemStorage implements IStorage {
 
   async getWordsForReview(userId = "default_user", limit = 25): Promise<VocabularyWordWithProgress[]> {
     const wordsWithProgress = await this.getVocabularyWordsWithProgress(userId);
-    const now = new Date();
     
-    // Only return learned words (words that have been reviewed at least once)
+    // Return all learned words (words that have been reviewed at least once)
+    // This allows practicing any learned vocabulary, regardless of review schedule
     return wordsWithProgress
       .filter(word => 
         word.progress && 
-        word.progress.lastReviewed && // Must have been learned/reviewed at least once
-        word.progress.nextReview && 
-        new Date(word.progress.nextReview) <= now
+        word.progress.lastReviewed // Must have been learned/reviewed at least once
       )
       .sort(() => Math.random() - 0.5) // Randomize order
       .slice(0, limit);
