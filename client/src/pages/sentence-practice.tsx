@@ -181,7 +181,7 @@ export default function SentencePractice() {
     setIsSubmitting(false);
   };
 
-  const getGenderColor = (article: string | undefined) => {
+  const getGenderColor = (article: string | null | undefined) => {
     switch (article) {
       case "der": return "text-blue-600 dark:text-blue-400";
       case "die": return "text-green-600 dark:text-green-400";
@@ -348,7 +348,7 @@ export default function SentencePractice() {
                     </div>
                     <GermanWordAudioButton 
                       german={word.german} 
-                      article={word.article || undefined} 
+                      article={word.article || ""} 
                       size="sm"
                     />
                   </div>
