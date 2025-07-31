@@ -87,7 +87,7 @@ export default function Learn() {
     }
   }, [wordsForLearning, sessionId]);
 
-  // Create sophisticated interleaved queue that tests words after 3+ presentations
+  // Create interleaved queue: present each word first, then randomly test words after 3+ presentations
   const createInterleavedQueue = (words: VocabularyWordWithProgress[]): Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> => {
     const queue: Array<{word: VocabularyWordWithProgress, isFirstTime: boolean, exerciseType: 'presentation' | 'test'}> = [];
     const presentationCounts = new Map<string, number>();
@@ -98,75 +98,66 @@ export default function Learn() {
       presentationCounts.set(word.id, 0);
     });
     
-    // Algorithm: Present words, then randomly test words that have been shown 3+ times
-    const totalExercises = words.length * 6; // Each word will be encountered ~6 times
-    let wordsToPresent = [...words];
+    // Phase 1: Present each word once (first time learning)
+    words.forEach(word => {
+      queue.push({
+        word,
+        isFirstTime: true,
+        exerciseType: 'presentation'
+      });
+      presentationCounts.set(word.id, 1);
+      console.log(`Initial presentation: ${word.german}`);
+    });
     
-    for (let exerciseIndex = 0; exerciseIndex < totalExercises; exerciseIndex++) {
-      // Decide whether to present a new word or test an already presented word
-      const canTest = availableForTesting.size > 0;
-      const shouldTest = canTest && Math.random() < 0.4; // 40% chance to test if words are available
+    // Phase 2: Continue presenting words and add random tests after 3+ presentations
+    // Target: roughly 2-3 exercises per word total (manageable session length)
+    const maxAdditionalExercises = words.length * 2; // Reasonable session length
+    
+    for (let i = 0; i < maxAdditionalExercises; i++) {
+      // Decide: present a word again OR test an eligible word
+      const shouldTest = availableForTesting.size > 0 && Math.random() < 0.6; // 60% chance to test when possible
       
-      if (shouldTest && availableForTesting.size > 0) {
-        // Test a random word that's available for testing
+      if (shouldTest) {
+        // Test a random eligible word
         const availableWords = Array.from(availableForTesting);
         const randomIndex = Math.floor(Math.random() * availableWords.length);
         const wordIdToTest = availableWords[randomIndex];
         const wordToTest = words.find(w => w.id === wordIdToTest)!;
         
         queue.push({
-          word: wordToTest, 
+          word: wordToTest,
           isFirstTime: false,
           exerciseType: 'test'
         });
-        console.log(`Exercise ${exerciseIndex + 1}: TEST ${wordToTest.german} (presented ${presentationCounts.get(wordIdToTest)} times)`);
-      } else if (wordsToPresent.length > 0) {
-        // Present a new word (or re-present an existing word)
-        const wordIndex = exerciseIndex % words.length;
+        console.log(`Random test: ${wordToTest.german} (seen ${presentationCounts.get(wordIdToTest)} times)`);
+      } else {
+        // Present a word again (cyclically)
+        const wordIndex = i % words.length;
         const wordToPresent = words[wordIndex];
         const currentCount = presentationCounts.get(wordToPresent.id) || 0;
-        const isFirstTime = currentCount === 0;
         
         queue.push({
           word: wordToPresent,
-          isFirstTime,
+          isFirstTime: false,
           exerciseType: 'presentation'
         });
         
-        // Update presentation count
         const newCount = currentCount + 1;
         presentationCounts.set(wordToPresent.id, newCount);
         
-        // Add to available for testing if presented 3+ times
+        // Make eligible for testing after 3+ presentations
         if (newCount >= 3) {
           availableForTesting.add(wordToPresent.id);
         }
         
-        console.log(`Exercise ${exerciseIndex + 1}: PRESENT ${wordToPresent.german} (${isFirstTime ? 'first time' : `${newCount}th time`})`);
-      } else {
-        // Fallback: test any available word
-        if (availableForTesting.size > 0) {
-          const availableWords = Array.from(availableForTesting);
-          const randomIndex = Math.floor(Math.random() * availableWords.length);
-          const wordIdToTest = availableWords[randomIndex];
-          const wordToTest = words.find(w => w.id === wordIdToTest)!;
-          
-          queue.push({
-            word: wordToTest, 
-            isFirstTime: false,
-            exerciseType: 'test'
-          });
-          console.log(`Exercise ${exerciseIndex + 1}: FALLBACK TEST ${wordToTest.german}`);
-        }
+        console.log(`Re-present: ${wordToPresent.german} (${newCount} times total)`);
       }
     }
     
-    // Store the presentation counts for the component
     setWordPresentationCount(presentationCounts);
     
-    console.log('Advanced interleaved queue created:');
-    console.log(`Total exercises: ${queue.length}, Unique words: ${words.length}`);
-    console.log('Presentation counts:', Object.fromEntries(presentationCounts));
+    console.log('Interleaved learning queue:');
+    console.log(`Total exercises: ${queue.length}, Words: ${words.length}`);
     
     return queue;
   };
