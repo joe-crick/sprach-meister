@@ -52,6 +52,10 @@ export const userSettings = pgTable("user_settings", {
   showTips: boolean("show_tips").default(true),
   spacedRepetitionDifficulty: text("spaced_repetition_difficulty").default("normal"), // easy, normal, hard
   enableNotifications: boolean("enable_notifications").default(true),
+  language: text("language").default("english"), // english, german
+  whatsappNumber: text("whatsapp_number"), // phone number for WhatsApp reminders
+  reminderTime: text("reminder_time").default("18:00"), // daily reminder time (HH:MM format)
+  enableWhatsappReminders: boolean("enable_whatsapp_reminders").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

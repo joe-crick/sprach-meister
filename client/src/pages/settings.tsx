@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -11,6 +12,7 @@ import { UserSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useAudio } from "@/lib/audio";
 import { GermanWordAudioButton } from "@/components/audio-button";
+import { Globe, MessageCircle, Clock } from "lucide-react";
 
 export default function Settings() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -177,6 +179,112 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
+          {/* Language & Region Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Language & Region
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Application Language
+                </Label>
+                <Select
+                  value={settings.language || "english"}
+                  onValueChange={(value) => handleSettingChange("language", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="english">English</SelectItem>
+                    <SelectItem value="german">Deutsch (German)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose your preferred language for the SprachMeister interface
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* WhatsApp Reminders */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                WhatsApp Reminders
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium text-gray-900">
+                    Enable WhatsApp Reminders
+                  </Label>
+                  <p className="text-sm text-gray-600">
+                    Get daily practice reminders via WhatsApp
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.enableWhatsappReminders || false}
+                  onCheckedChange={(checked) => handleSettingChange("enableWhatsappReminders", checked)}
+                />
+              </div>
+
+              {settings.enableWhatsappReminders && (
+                <>
+                  <div>
+                    <Label htmlFor="whatsappNumber" className="text-sm font-medium text-gray-700 mb-2 block">
+                      WhatsApp Phone Number
+                    </Label>
+                    <Input
+                      id="whatsappNumber"
+                      type="tel"
+                      placeholder="+1234567890"
+                      value={settings.whatsappNumber || ""}
+                      onChange={(e) => handleSettingChange("whatsappNumber", e.target.value)}
+                      className="w-full"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Include country code (e.g., +49 for Germany, +1 for US/Canada)
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="reminderTime" className="text-sm font-medium text-gray-700 mb-2 block">
+                      <Clock className="h-4 w-4 inline mr-1" />
+                      Daily Reminder Time
+                    </Label>
+                    <Input
+                      id="reminderTime"
+                      type="time"
+                      value={settings.reminderTime || "18:00"}
+                      onChange={(e) => handleSettingChange("reminderTime", e.target.value)}
+                      className="w-full"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Choose when you'd like to receive your daily practice reminder
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">How WhatsApp Reminders Work</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• Daily messages sent to remind you to practice German</li>
+                      <li>• Messages include motivational content and learning tips</li>
+                      <li>• You can disable reminders anytime in these settings</li>
+                      <li>• SprachMeister respects your privacy and only sends learning reminders</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Learning Settings */}
           <Card>
             <CardHeader>

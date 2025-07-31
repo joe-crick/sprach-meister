@@ -602,6 +602,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Settings routes
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      let settings = await storage.getUserSettings(userId);
+      
+      // Create default settings if none exist
+      if (!settings) {
+        settings = await storage.createUserSettings({
+          userId,
+          newWordsPerSession: 10,
+          reviewSessionSize: 25,
+          autoPronounce: true,
+          showTips: true,
+          spacedRepetitionDifficulty: "normal",
+          enableNotifications: true,
+          language: "english",
+          reminderTime: "18:00",
+          enableWhatsappReminders: false
+        });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error('Settings fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.put("/api/settings", async (req, res) => {
+    try {
+      const validation = insertUserSettingsSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid settings data", errors: validation.error.errors });
+      }
+
+      const userId = validation.data.userId || "default_user";
+      let settings = await storage.getUserSettings(userId);
+      
+      if (!settings) {
+        // Create new settings
+        settings = await storage.createUserSettings(validation.data);
+      } else {
+        // Update existing settings
+        settings = await storage.updateUserSettings(userId, validation.data);
+      }
+      
+      if (!settings) {
+        return res.status(404).json({ message: "Failed to update settings" });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error('Settings update error:', error);
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
