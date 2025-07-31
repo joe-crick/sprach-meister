@@ -55,12 +55,7 @@ export default function SentencePractice() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exerciseMode, setExerciseMode] = useState<"vocabulary" | "grammar">("vocabulary");
   const [selectedGrammarTopic, setSelectedGrammarTopic] = useState<string>("");
-  const [exerciseHistory, setExerciseHistory] = useState<Array<{
-    words: string[];
-    sentence: string;
-    feedback: SentenceFeedback;
-    grammarTopic?: string;
-  }>>([]);
+
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
