@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { VocabularyWordWithProgress } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,13 +36,17 @@ export default function InterleavedLearnExercise({
   // Reset component state when word changes (important for the queue system)
   const [lastWordId, setLastWordId] = useState(word.id);
   const [lastExerciseType, setLastExerciseType] = useState(exerciseType);
-  if (word.id !== lastWordId || exerciseType !== lastExerciseType) {
-    setLastWordId(word.id);
-    setLastExerciseType(exerciseType);
-    setPhase(exerciseType === 'presentation' ? "presentation" : "test");
-    setUserAnswer("");
-    setIsCorrect(false);
-  }
+  
+  // Use useEffect to avoid calling setState during render
+  useEffect(() => {
+    if (word.id !== lastWordId || exerciseType !== lastExerciseType) {
+      setLastWordId(word.id);
+      setLastExerciseType(exerciseType);
+      setPhase(exerciseType === 'presentation' ? "presentation" : "test");
+      setUserAnswer("");
+      setIsCorrect(false);
+    }
+  }, [word.id, exerciseType, lastWordId, lastExerciseType]);
 
   const getGenderColor = (article: string | null) => {
     if (!article) return "text-gray-600";

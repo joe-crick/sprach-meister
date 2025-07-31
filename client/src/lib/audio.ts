@@ -254,11 +254,21 @@ export function useAudio() {
   };
 
   const speakWord = async (word: string, article?: string) => {
-    return speakGermanWord(word, article);
+    try {
+      await speakGermanWord(word, article);
+    } catch (error) {
+      console.error('Word audio playback failed:', error);
+      // Don't throw error to avoid breaking UI
+    }
   };
 
   const speakSentence = async (sentence: string) => {
-    return speakGermanSentence(sentence);
+    try {
+      await speakGermanSentence(sentence);
+    } catch (error) {
+      console.error('Sentence audio playback failed:', error);
+      // Don't throw error to avoid breaking UI
+    }
   };
 
   const stop = () => {
