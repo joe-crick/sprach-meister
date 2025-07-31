@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { VocabularyWordWithProgress } from "@shared/schema";
+import { VocabularyWordWithProgress, UserSettings } from "@shared/schema";
 import ReviewExercise from "@/components/review-exercise";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -25,14 +25,26 @@ export default function Review() {
   // Check if we're in "all words" mode
   const isAllWordsMode = location.includes("mode=all");
 
+  // First fetch user settings to get reviewSessionSize
+  const { data: settings } = useQuery<UserSettings>({
+    queryKey: ["/api/settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/settings", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch settings");
+      return response.json();
+    },
+  });
+
   const { data: wordsForReview, isLoading } = useQuery<VocabularyWordWithProgress[]>({
-    queryKey: ["/api/vocabulary/all-words-for-review"],
+    queryKey: ["/api/vocabulary/all-words-for-review", settings?.reviewSessionSize],
     queryFn: async () => {
       // Always use the "all words for review" endpoint to ensure we always have words to review
-      const response = await fetch("/api/vocabulary/all-words-for-review?limit=25", { credentials: "include" });
+      const limit = settings?.reviewSessionSize || 25;
+      const response = await fetch(`/api/vocabulary/all-words-for-review?limit=${limit}`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for review");
       return response.json();
     },
+    enabled: !!settings, // Only run this query after settings are loaded
   });
 
   const createSessionMutation = useMutation({

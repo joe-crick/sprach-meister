@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { VocabularyWordWithProgress } from "@shared/schema";
+import { VocabularyWordWithProgress, UserSettings } from "@shared/schema";
 import InterleavedLearnExercise from "@/components/interleaved-learn-exercise";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,13 +22,26 @@ export default function Learn() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: wordsForLearning, isLoading } = useQuery<VocabularyWordWithProgress[]>({
-    queryKey: ["/api/words/for-learning"],
+  // First fetch user settings to get newWordsPerSession
+  const { data: settings } = useQuery<UserSettings>({
+    queryKey: ["/api/settings"],
     queryFn: async () => {
-      const response = await fetch("/api/words/for-learning?limit=10", { credentials: "include" });
+      const response = await fetch("/api/settings", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch settings");
+      return response.json();
+    },
+  });
+
+  // Then fetch words using the user's preferred session size
+  const { data: wordsForLearning, isLoading } = useQuery<VocabularyWordWithProgress[]>({
+    queryKey: ["/api/vocabulary/words-for-learning", settings?.newWordsPerSession],
+    queryFn: async () => {
+      const limit = settings?.newWordsPerSession || 10;
+      const response = await fetch(`/api/vocabulary/words-for-learning?limit=${limit}`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for learning");
       return response.json();
     },
+    enabled: !!settings, // Only run this query after settings are loaded
   });
 
   const createSessionMutation = useMutation({
