@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAudio } from "@/lib/audio";
 import { GermanWordAudioButton } from "@/components/audio-button";
 import { Globe, MessageCircle, Clock, Bell, Smartphone } from "lucide-react";
+import { useTranslation, Language } from "@/lib/translations";
 
 export default function Settings() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -43,6 +44,10 @@ export default function Settings() {
       setPhoneNumber(settings.phoneNumber);
     }
   }, [settings?.phoneNumber]);
+
+  // Get current language from settings and load translations
+  const currentLanguage = (settings?.language as Language) || 'english';
+  const { t } = useTranslation(currentLanguage);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Partial<UserSettings>) => {
@@ -225,8 +230,13 @@ export default function Settings() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Settings</h2>
-          <p className="text-gray-600">Customize your learning experience</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">{t.settingsTitle}</h2>
+          <p className="text-gray-600">
+            {currentLanguage === 'german' 
+              ? 'Passe deine Lernerfahrung an' 
+              : 'Customize your learning experience'
+            }
+          </p>
         </div>
 
         <div className="space-y-6">
@@ -235,13 +245,13 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
-                Language & Region
+                {currentLanguage === 'german' ? 'Sprache & Region' : 'Language & Region'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
                 <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Application Language
+                  {t.language}
                 </Label>
                 <Select
                   value={settings.language || "english"}
@@ -256,7 +266,10 @@ export default function Settings() {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-gray-500 mt-1">
-                  Choose your preferred language for the SprachMeister interface
+                  {currentLanguage === 'german' 
+                    ? 'Wähle deine bevorzugte Sprache für die App-Oberfläche' 
+                    : 'Choose your preferred language for the app interface'
+                  }
                 </p>
               </div>
             </CardContent>
@@ -267,7 +280,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Smartphone className="h-5 w-5" />
-                SMS Reminders
+                {t.smsReminders}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

@@ -1,27 +1,44 @@
 import { Link, useLocation } from "wouter";
 import { Home, Brain, RotateCcw, TrendingUp, Book, FileText, GraduationCap, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Learn", href: "/learn", icon: Brain },
-  { name: "Review", href: "/review", icon: RotateCcw },
-  { name: "Progress", href: "/progress", icon: TrendingUp },
-  { name: "Vocabulary", href: "/vocabulary", icon: Book },
-  { name: "Verbs", href: "/verbs", icon: FileText },
-  { name: "Grammar", href: "/grammar", icon: GraduationCap },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
+import { useQuery } from "@tanstack/react-query";
+import { UserSettings } from "@shared/schema";
+import { useTranslation, Language } from "@/lib/translations";
 
 export default function Sidebar() {
   const [location] = useLocation();
+
+  // Fetch user settings to determine language
+  const { data: settings } = useQuery<UserSettings>({
+    queryKey: ["/api/settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/settings", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch settings");
+      return response.json();
+    },
+  });
+
+  const currentLanguage = (settings?.language as Language) || 'english';
+  const { t } = useTranslation(currentLanguage);
+
+  // Navigation items with translations
+  const navigation = [
+    { name: t.dashboard, href: "/", icon: Home },
+    { name: t.learn, href: "/learn", icon: Brain },
+    { name: t.review, href: "/review", icon: RotateCcw },
+    { name: t.progress, href: "/progress", icon: TrendingUp },
+    { name: t.vocabulary, href: "/vocabulary", icon: Book },
+    { name: t.verbs, href: "/verbs", icon: FileText },
+    { name: t.grammar, href: "/grammar", icon: GraduationCap },
+    { name: t.settings, href: "/settings", icon: Settings },
+  ];
 
   return (
     <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200">
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center flex-shrink-0 px-4 py-5">
-          <h1 className="text-xl font-bold text-gray-900">German B1 Trainer</h1>
+          <h1 className="text-xl font-bold text-gray-900">{t.dashboardTitle}</h1>
         </div>
 
         {/* Navigation */}
