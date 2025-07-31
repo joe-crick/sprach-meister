@@ -120,13 +120,18 @@ export default function Verbs() {
 
   // Create combined verb list
   const vocabularyVerbs = vocabularyWords
-    .filter((word: any) => word.wordType === 'verb')
+    .filter((word: any) => {
+      console.log('Word:', word.german, 'wordType:', word.wordType, 'full word:', JSON.stringify(word, null, 2));
+      return word.wordType === 'verb';
+    })
     .map((word: any) => ({
       infinitive: word.german,
       english: word.english,
       category: 'regular', // Assume regular unless specified
       forms: generateRegularVerbConjugation(word.german)
     }));
+
+  console.log('Found vocabulary verbs:', vocabularyVerbs.length);
 
   const availableVerbs: Verb[] = [
     ...ESSENTIAL_VERBS,
