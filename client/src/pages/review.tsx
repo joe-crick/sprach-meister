@@ -26,10 +26,10 @@ export default function Review() {
   const isAllWordsMode = location.includes("mode=all");
 
   const { data: wordsForReview, isLoading } = useQuery<VocabularyWordWithProgress[]>({
-    queryKey: [isAllWordsMode ? "/api/all-words/for-review" : "/api/words/for-review"],
+    queryKey: ["/api/vocabulary/all-words-for-review"],
     queryFn: async () => {
-      const endpoint = isAllWordsMode ? "/api/vocabulary/all-words-for-review" : "/api/words/for-review";
-      const response = await fetch(`${endpoint}?limit=25`, { credentials: "include" });
+      // Always use the "all words for review" endpoint to ensure we always have words to review
+      const response = await fetch("/api/vocabulary/all-words-for-review?limit=25", { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for review");
       return response.json();
     },

@@ -550,6 +550,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/vocabulary/all-words-for-review", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      const limit = parseInt(req.query.limit as string) || 25;
+      const words = await storage.getAllWordsForReview(userId, limit);
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch all words for review" });
+    }
+  });
+
   // Grammar validation route
   app.post("/api/grammar/validate", async (req, res) => {
     try {
