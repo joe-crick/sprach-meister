@@ -84,49 +84,6 @@ export default function InterleavedLearnExercise({
     return sentence.replace(regex, blanks);
   };
 
-  const highlightWordInSentence = (sentence: string, targetWord: string, article: string | null) => {
-    if (!sentence || !targetWord) return <span>{sentence}</span>;
-    
-    // Create a regex to match the word with optional article
-    const articlePattern = article ? `(${article}\\s+)?` : '';
-    const regex = new RegExp(`\\b${articlePattern}(${targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'gi');
-    
-    let lastIndex = 0;
-    const parts = [];
-    let match;
-    
-    while ((match = regex.exec(sentence)) !== null) {
-      // Add text before the match
-      if (match.index > lastIndex) {
-        parts.push(sentence.substring(lastIndex, match.index));
-      }
-      
-      // Add the highlighted word
-      const matchedArticle = match[1] ? match[1].trim() : '';
-      const matchedWord = match[2];
-      
-      parts.push(
-        <span key={match.index} className="inline-block">
-          {matchedArticle && (
-            <span className={getGenderColor(article)}>{matchedArticle} </span>
-          )}
-          <span className="font-bold text-gray-900 bg-yellow-200 px-1 rounded">
-            {matchedWord}
-          </span>
-        </span>
-      );
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    // Add remaining text
-    if (lastIndex < sentence.length) {
-      parts.push(sentence.substring(lastIndex));
-    }
-    
-    return <span>{parts}</span>;
-  };
-
   const handleContinueFromPresentation = () => {
     // In two-phase learning, presentation exercises just move to next word
     // Testing happens in separate exercises in the queue
@@ -176,56 +133,44 @@ export default function InterleavedLearnExercise({
 
         <Card className="p-8">
           <CardContent className="text-center space-y-6">
-            {/* Primary sentence display with highlighted word */}
-            {word.exampleSentence ? (
-              <div className="space-y-4">
-                <div className="text-2xl leading-relaxed text-gray-700">
-                  {highlightWordInSentence(word.exampleSentence, word.german, word.article)}
-                  <SentenceAudioButton sentence={word.exampleSentence} className="ml-3" />
-                </div>
-                
-                <div className="text-lg text-gray-600">
-                  {word.exampleTranslation}
-                </div>
-
-                {word.article && (
-                  <div className="flex justify-center">
-                    {getGenderBadge(word.article)}
-                  </div>
-                )}
-
-                <div className="text-sm text-gray-500 uppercase tracking-wide">
-                  {word.wordType || 'noun'}
-                </div>
+            <div className="space-y-4">
+              <div className="text-4xl font-bold">
+                <span className={getGenderColor(word.article)}>
+                  {word.article && `${word.article} `}
+                </span>
+                <span className="text-gray-900">{word.german}</span>
+                <GermanWordAudioButton german={word.german} article={word.article || ""} className="ml-3" />
               </div>
-            ) : (
-              /* Fallback for words without example sentences */
-              <div className="space-y-4">
-                <div className="text-4xl font-bold">
-                  <span className={getGenderColor(word.article)}>
-                    {word.article && `${word.article} `}
-                  </span>
-                  <span className="text-gray-900">{word.german}</span>
-                  <GermanWordAudioButton german={word.german} article={word.article || ""} className="ml-3" />
-                </div>
-                
-                <div className="text-xl text-gray-600">
-                  {word.english}
-                </div>
+              
+              <div className="text-xl text-gray-600">
+                {word.english}
+              </div>
 
-                {word.article && (
-                  <div className="flex justify-center">
-                    {getGenderBadge(word.article)}
+              {word.article && (
+                <div className="flex justify-center">
+                  {getGenderBadge(word.article)}
+                </div>
+              )}
+
+              <div className="text-sm text-gray-500 uppercase tracking-wide">
+                {word.wordType || 'noun'}
+              </div>
+            </div>
+
+            {word.exampleSentence && (
+              <div className="bg-gray-50 p-6 rounded-lg space-y-3">
+                <div className="text-lg text-gray-700">
+                  {word.exampleSentence}
+                  <SentenceAudioButton sentence={word.exampleSentence} className="ml-2" />
+                </div>
+                {word.exampleTranslation && (
+                  <div className="text-gray-500">
+                    {word.exampleTranslation}
                   </div>
                 )}
-
-                <div className="text-sm text-gray-500 uppercase tracking-wide">
-                  {word.wordType || 'noun'}
-                </div>
               </div>
             )}
 
-            {/* Memory tip section */}
             {word.memoryTip && (
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="text-sm text-blue-800">
