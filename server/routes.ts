@@ -626,8 +626,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send test WhatsApp message
-  app.post("/api/settings/test-whatsapp", async (req, res) => {
+  // Send test SMS message using TextBelt API (free for testing)
+  app.post("/api/settings/test-notification", async (req, res) => {
     try {
       const { phoneNumber } = req.body;
       
@@ -635,35 +635,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Phone number is required" });
       }
 
-      // In a real implementation, this would integrate with WhatsApp Business API
-      // For now, we'll simulate the test message functionality
-      const testMessage = `🎓 SprachMeister Test Message!
+      const testMessage = `🎓 SprachMeister Test SMS!
 
-Hello! This is a test message to confirm your WhatsApp notifications are working.
+Hello! This is a test message to confirm your SMS notifications are working.
 
 Your daily German learning reminders will be sent to this number.
 
 Viel Erfolg beim Deutschlernen! 🇩🇪`;
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In production, you would:
-      // 1. Use WhatsApp Business API or a service like Twilio
-      // 2. Send the actual message to the phone number
-      // 3. Handle API responses and errors properly
-      
-      console.log(`Test WhatsApp message would be sent to ${phoneNumber}:`, testMessage);
-      
-      res.json({ 
-        success: true, 
-        message: "Test message sent successfully",
-        phoneNumber: phoneNumber,
-        timestamp: new Date().toISOString()
-      });
+
+      try {
+        // Use TextBelt API for free SMS testing (1 free SMS per day per phone number)
+        const response = await fetch('https://textbelt.com/text', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone: phoneNumber,
+            message: testMessage,
+            key: 'textbelt' // Free tier key
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          console.log(`SMS sent successfully to ${phoneNumber}. TextBelt response:`, result);
+          res.json({ 
+            success: true, 
+            message: "Test SMS sent successfully",
+            phoneNumber: phoneNumber,
+            timestamp: new Date().toISOString(),
+            quotaRemaining: result.quotaRemaining
+          });
+        } else {
+          console.error('TextBelt API error:', result);
+          res.status(400).json({ 
+            success: false,
+            message: result.error || "Failed to send SMS",
+            phoneNumber: phoneNumber
+          });
+        }
+      } catch (apiError) {
+        console.error('SMS API error:', apiError);
+        res.status(500).json({ message: "SMS service temporarily unavailable" });
+      }
     } catch (error) {
-      console.error('WhatsApp test error:', error);
-      res.status(500).json({ message: "Failed to send test message" });
+      console.error('SMS test error:', error);
+      res.status(500).json({ message: "Failed to send test SMS" });
     }
   });
 

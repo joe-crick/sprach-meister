@@ -159,10 +159,10 @@ export default function Settings() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Test Notification Sent!",
-        description: "Check your browser notifications and SMS log. This simulates how reminders will work.",
+        title: "Test SMS Sent!",
+        description: `SMS sent successfully to your phone. ${data.quotaRemaining ? `Remaining free SMS: ${data.quotaRemaining}` : ""}`,
       });
     },
     onError: () => {
@@ -174,18 +174,15 @@ export default function Settings() {
     }
   });
 
-  const handleTestNotification = async () => {
-    // Request notification permission first
-    if ('Notification' in window && Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        toast({
-          title: "Notification Permission Denied",
-          description: "Please enable browser notifications to receive reminders.",
-          variant: "destructive",
-        });
-        return;
-      }
+  const handleTestNotification = () => {
+    const phoneToTest = phoneNumber || settings?.phoneNumber;
+    if (!phoneToTest) {
+      toast({
+        title: "No Phone Number",
+        description: "Please enter and save a phone number first.",
+        variant: "destructive",
+      });
+      return;
     }
     
     testNotificationMutation.mutate();
@@ -264,65 +261,65 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* WhatsApp Reminders */}
+          {/* SMS Reminders */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                WhatsApp Reminders
+                <Smartphone className="h-5 w-5" />
+                SMS Reminders
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-sm font-medium text-gray-900">
-                    Enable WhatsApp Reminders
+                    Enable SMS Reminders
                   </Label>
                   <p className="text-sm text-gray-600">
-                    Get daily practice reminders via WhatsApp
+                    Get daily practice reminders via SMS text message
                   </p>
                 </div>
                 <Switch
-                  checked={settings.enableWhatsappReminders || false}
-                  onCheckedChange={(checked) => handleSettingChange("enableWhatsappReminders", checked)}
+                  checked={settings.enableSmsReminders || false}
+                  onCheckedChange={(checked) => handleSettingChange("enableSmsReminders", checked)}
                 />
               </div>
 
-              {settings.enableWhatsappReminders && (
+              {settings.enableSmsReminders && (
                 <>
                   <div>
-                    <Label htmlFor="whatsappNumber" className="text-sm font-medium text-gray-700 mb-2 block">
-                      WhatsApp Phone Number
+                    <Label htmlFor="phoneNumber" className="text-sm font-medium text-gray-700 mb-2 block">
+                      Phone Number for SMS
                     </Label>
                     <div className="flex gap-2">
                       <Input
-                        id="whatsappNumber"
+                        id="phoneNumber"
                         type="tel"
                         placeholder="+1234567890"
-                        value={whatsappNumber}
-                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
                         className="flex-1"
                       />
                       <Button 
-                        onClick={handleSaveWhatsappNumber}
-                        disabled={updateSettingsMutation.isPending || whatsappNumber === (settings?.whatsappNumber || "")}
+                        onClick={handleSavePhoneNumber}
+                        disabled={updateSettingsMutation.isPending || phoneNumber === (settings?.phoneNumber || "")}
                         size="sm"
                         className="px-4"
                       >
                         {updateSettingsMutation.isPending ? "Saving..." : "Save"}
                       </Button>
                       <Button 
-                        onClick={handleTestWhatsapp}
-                        disabled={testWhatsappMutation.isPending || (!whatsappNumber && !settings?.whatsappNumber)}
+                        onClick={handleTestNotification}
+                        disabled={testNotificationMutation.isPending || (!phoneNumber && !settings?.phoneNumber)}
                         size="sm"
                         variant="outline"
                         className="px-4"
                       >
-                        {testWhatsappMutation.isPending ? "Testing..." : "Test"}
+                        {testNotificationMutation.isPending ? "Testing..." : "Test"}
                       </Button>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
-                      Include country code (e.g., +49 for Germany, +1 for US/Canada). Use the Test button to verify notifications work.
+                      Include country code (e.g., +49 for Germany, +1 for US/Canada). Use the Test button to verify SMS delivery.
                     </p>
                   </div>
 
@@ -344,10 +341,11 @@ export default function Settings() {
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-blue-900 mb-2">How WhatsApp Reminders Work</h4>
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">How SMS Reminders Work</h4>
                     <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Daily messages sent to remind you to practice German</li>
+                      <li>• Daily SMS messages sent to remind you to practice German</li>
                       <li>• Messages include motivational content and learning tips</li>
+                      <li>• Standard SMS rates may apply from your carrier</li>
                       <li>• You can disable reminders anytime in these settings</li>
                       <li>• SprachMeister respects your privacy and only sends learning reminders</li>
                     </ul>
