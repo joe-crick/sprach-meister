@@ -574,6 +574,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Grammar explanation route
+  // Sentence practice routes
+  app.post("/api/sentence-practice/generate", async (req, res) => {
+    try {
+      const { words, difficulty = "intermediate" } = req.body;
+      
+      if (!words || !Array.isArray(words) || words.length < 2) {
+        return res.status(400).json({ message: "Need at least 2 words for sentence practice" });
+      }
+
+      const wordList = words.map(w => `${w.article ? w.article + ' ' : ''}${w.german} (${w.english})`).join(", ");
+      const categories = [...new Set(words.map(w => w.category))].join(", ");
+      
+      const prompt = await generateSentencePrompt(words, difficulty);
+      
+      res.json({
+        prompt,
+        difficulty,
+        categories
+      });
+    } catch (error) {
+      console.error('Sentence practice generation error:', error);
+      res.status(500).json({ message: "Failed to generate sentence practice" });
+    }
+  });
+
+  app.post("/api/sentence-practice/evaluate", async (req, res) => {
+    try {
+      const { sentence, words, prompt } = req.body;
+      
+      if (!sentence || !words || !Array.isArray(words)) {
+        return res.status(400).json({ message: "Invalid sentence practice data" });
+      }
+
+      const feedback = await evaluateSentence(sentence, words, prompt);
+      
+      res.json(feedback);
+    } catch (error) {
+      console.error('Sentence evaluation error:', error);
+      res.status(500).json({ message: "Failed to evaluate sentence" });
+    }
+  });
+
   app.post("/api/grammar/explain", async (req, res) => {
     try {
       const { topic, language } = req.body;
