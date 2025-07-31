@@ -15,22 +15,45 @@ interface ReviewExerciseProps {
 
 type AnswerState = "none" | "correct" | "incorrect";
 
+type ExerciseType = "article" | "translation" | "multiple_choice" | "fill_blank";
+
 export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExerciseProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [answerState, setAnswerState] = useState<AnswerState>("none");
   const [showFeedback, setShowFeedback] = useState(false);
+  const [exerciseType, setExerciseType] = useState<ExerciseType>("translation");
 
-  // Reset state when word changes
+  // Reset state when word changes and determine exercise type
   useEffect(() => {
     setSelectedAnswer("");
     setAnswerState("none");
     setShowFeedback(false);
-  }, [word.id]); // Reset when word ID changes
+    
+    // Randomly choose exercise type based on word properties
+    const possibleTypes: ExerciseType[] = [];
+    
+    // Article questions only for nouns with articles
+    if (word.wordType === "noun" && word.article) {
+      possibleTypes.push("article");
+    }
+    
+    // Translation questions for all words
+    possibleTypes.push("translation");
+    
+    // Multiple choice for all words
+    possibleTypes.push("multiple_choice");
+    
+    // Fill in the blank if we have example sentences
+    if (word.exampleSentence) {
+      possibleTypes.push("fill_blank");
+    }
+    
+    // Randomly select from available types
+    const randomType = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+    setExerciseType(randomType);
+  }, [word.id]);
 
-  // Determine exercise type based on word type
-  const isNounWithArticle = word.wordType === "noun" && word.article;
   const articles = ["der", "die", "das"];
-  const correctAnswer = isNounWithArticle ? word.article : word.german;
 
   const handleAnswerSelect = (answer: string) => {
     if (showFeedback) return; // Prevent selection after feedback is shown
@@ -56,6 +79,52 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
     onAnswer(isCorrect, selectedAnswer);
   };
 
+  const handleMultipleChoiceSelect = (answer: string) => {
+    if (showFeedback) return;
+
+    setSelectedAnswer(answer);
+    const isCorrect = answer === word.english;
+    setAnswerState(isCorrect ? "correct" : "incorrect");
+    setShowFeedback(true);
+    
+    onAnswer(isCorrect, answer);
+  };
+
+  const handleFillBlankSubmit = () => {
+    if (showFeedback) return;
+
+    const userInput = selectedAnswer.toLowerCase().trim();
+    const correctAnswer = word.german.toLowerCase().trim();
+    const isCorrect = userInput === correctAnswer;
+    
+    setAnswerState(isCorrect ? "correct" : "incorrect");
+    setShowFeedback(true);
+    
+    onAnswer(isCorrect, selectedAnswer);
+  };
+
+  // Generate wrong answers for multiple choice
+  const generateWrongAnswers = (): string[] => {
+    const commonWords = [
+      "house", "car", "book", "water", "food", "time", "person", "work", "day", "life",
+      "hand", "eye", "place", "number", "part", "right", "new", "good", "first", "last",
+      "long", "great", "little", "own", "other", "old", "right", "big", "high", "different"
+    ];
+    
+    const wrongAnswers: string[] = [];
+    const correctAnswer = word.english.toLowerCase();
+    
+    // Get 3 random wrong answers that aren't the correct answer
+    while (wrongAnswers.length < 3) {
+      const randomWord = commonWords[Math.floor(Math.random() * commonWords.length)];
+      if (randomWord !== correctAnswer && !wrongAnswers.includes(randomWord)) {
+        wrongAnswers.push(randomWord);
+      }
+    }
+    
+    return wrongAnswers;
+  };
+
   const getGenderColor = (article: string) => {
     switch (article) {
       case "der": return "der-blue";
@@ -75,7 +144,7 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
   };
 
   // Article exercise for nouns
-  if (isNounWithArticle) {
+  if (exerciseType === "article") {
     return (
       <div className="text-center">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Choose the correct article:</h2>
@@ -108,7 +177,7 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
         {articles.map((article) => {
           const genderColor = getGenderColor(article);
           const isSelected = selectedAnswer === article;
-          const isCorrect = article === correctAnswer;
+          const isCorrect = article === word.article;
           
           let buttonClass = `answer-option p-4 border-2 rounded-lg text-left transition-all duration-200 ${
             showFeedback && isSelected
@@ -160,19 +229,19 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
               {answerState === "correct" ? (
                 <>
                   <CheckCircle className="mr-2 h-5 w-5" />
-                  <span className="font-medium">Correct! "{correctAnswer} {word.german}" is {getGenderLabel(correctAnswer)}.</span>
+                  <span className="font-medium">Correct! "{word.article} {word.german}" is {getGenderLabel(word.article!)}.</span>
                 </>
               ) : (
                 <>
                   <XCircle className="mr-2 h-5 w-5" />
-                  <span className="font-medium">Incorrect. The correct answer is "{correctAnswer} {word.german}" ({getGenderLabel(correctAnswer)}).</span>
+                  <span className="font-medium">Incorrect. The correct answer is "{word.article} {word.german}" ({getGenderLabel(word.article!)}).</span>
                 </>
               )}
             </div>
             <div className="flex justify-center mt-3">
               <GermanWordAudioButton 
                 german={word.german} 
-                article={correctAnswer}
+                article={word.article || ""}
                 showLabel={true}
                 variant="outline"
                 size="sm"
@@ -196,7 +265,201 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
     );
   }
 
-  // Translation exercise for verbs, adjectives, etc.
+  // Multiple choice exercise
+  if (exerciseType === "multiple_choice") {
+    const wrongAnswers = generateWrongAnswers();
+    const allChoices = [...wrongAnswers, word.english].sort(() => Math.random() - 0.5);
+    
+    return (
+      <div className="text-center">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">What does this German word mean?</h2>
+        
+        {/* Question context */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-3">
+                {word.article && <span className={getGenderColor(word.article)}>{word.article}</span>}
+                {word.german}
+                <GermanWordAudioButton 
+                  german={word.german} 
+                  article={word.article || ""} 
+                  size="sm"
+                />
+              </div>
+              <div className="text-sm text-gray-500 uppercase">
+                {word.wordType || 'word'}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Multiple choice options */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {allChoices.map((choice, index) => {
+            const isSelected = selectedAnswer === choice;
+            const isCorrect = choice === word.english;
+            
+            return (
+              <button
+                key={index}
+                onClick={() => handleMultipleChoiceSelect(choice)}
+                disabled={showFeedback}
+                className={cn(
+                  "p-4 border-2 rounded-lg text-left transition-all duration-200",
+                  showFeedback && isSelected
+                    ? isCorrect
+                      ? "bg-green-50 border-green-500 text-green-800"
+                      : "bg-red-50 border-red-500 text-red-800"
+                    : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                )}
+              >
+                <div className="flex items-center">
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 mr-3",
+                    showFeedback && isSelected
+                      ? isCorrect ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
+                      : "border-gray-300"
+                  )} />
+                  <span className="font-medium capitalize">{choice}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Feedback area */}
+        {showFeedback && (
+          <Card className={cn("mb-6", answerState === "correct" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200")}>
+            <CardContent className="pt-4">
+              <div className={cn("flex items-center justify-center", answerState === "correct" ? "text-green-800" : "text-red-800")}>
+                {answerState === "correct" ? (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    <span className="font-medium">Correct! "{word.german}" means "{word.english}".</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="mr-2 h-5 w-5" />
+                    <span className="font-medium">Incorrect. "{word.german}" means "{word.english}".</span>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Next button */}
+        {showFeedback && (
+          <Button 
+            onClick={onNext}
+            size="lg" 
+            className="bg-secondary hover:bg-secondary/90"
+          >
+            Next Question <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Fill in the blank exercise
+  if (exerciseType === "fill_blank" && word.exampleSentence) {
+    const blankSentence = word.exampleSentence.replace(
+      new RegExp(`\\b${word.german}\\b`, 'gi'), 
+      '______'
+    );
+    
+    return (
+      <div className="text-center">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Fill in the blank:</h2>
+        
+        {/* Question context */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="text-xl text-gray-800 leading-relaxed">
+                {blankSentence}
+              </div>
+              {word.exampleTranslation && (
+                <div className="text-gray-600 italic">
+                  "{word.exampleTranslation}"
+                </div>
+              )}
+              <div className="text-sm text-gray-500">
+                Fill in the German word that completes this sentence.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Fill in the blank input */}
+        <div className="mb-6">
+          <Input
+            value={selectedAnswer}
+            onChange={(e) => setSelectedAnswer(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && !showFeedback && handleFillBlankSubmit()}
+            placeholder="Enter the German word..."
+            disabled={showFeedback}
+            className="text-center text-lg max-w-md mx-auto"
+          />
+          {!showFeedback && (
+            <Button 
+              onClick={handleFillBlankSubmit}
+              disabled={!selectedAnswer.trim()}
+              className="mt-4"
+              size="lg"
+            >
+              Submit Answer
+            </Button>
+          )}
+        </div>
+
+        {/* Feedback area */}
+        {showFeedback && (
+          <Card className={cn("mb-6", answerState === "correct" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200")}>
+            <CardContent className="pt-4">
+              <div className={cn("flex items-center justify-center", answerState === "correct" ? "text-green-800" : "text-red-800")}>
+                {answerState === "correct" ? (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    <span className="font-medium">Correct! The word is "{word.german}" ({word.english}).</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="mr-2 h-5 w-5" />
+                    <span className="font-medium">Incorrect. The correct word is "{word.german}" ({word.english}).</span>
+                  </>
+                )}
+              </div>
+              <div className="flex justify-center mt-3">
+                <GermanWordAudioButton 
+                  german={word.german} 
+                  article={word.article || ""}
+                  showLabel={true}
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Next button */}
+        {showFeedback && (
+          <Button 
+            onClick={onNext}
+            size="lg" 
+            className="bg-secondary hover:bg-secondary/90"
+          >
+            Next Question <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Translation exercise (default fallback)
   return (
     <div className="text-center">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">Translate this German word:</h2>
