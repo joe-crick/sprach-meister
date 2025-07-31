@@ -110,7 +110,7 @@ export async function evaluateSentence(sentence: string, words: any[], prompt: s
 
   const systemPrompt = `You are an expert German language teacher evaluating student sentences for B1-level learners. Provide constructive, encouraging feedback with specific grammar and vocabulary guidance.
 
-Always respond in valid JSON format with these exact fields:
+Always respond in valid JSON format with these exact fields (do not wrap in markdown code blocks):
 {
   "isCorrect": boolean,
   "feedback": "string with overall feedback",
@@ -144,9 +144,20 @@ Provide encouraging feedback even for incorrect attempts. If the text needs corr
       ],
     });
 
-    return JSON.parse((response.content[0] as any).text);
+    const responseText = (response.content[0] as any).text;
+    
+    // Clean JSON response - remove markdown code blocks if present
+    const cleanedText = responseText
+      .replace(/```json\s*/, '')
+      .replace(/```\s*$/, '')
+      .trim();
+    
+    return JSON.parse(cleanedText);
   } catch (error) {
     console.error('Error evaluating sentence:', error);
+    if (error instanceof SyntaxError) {
+      console.error('JSON parsing failed. This might be a formatting issue with the AI response.');
+    }
     throw new Error('Failed to evaluate sentence');
   }
 }
