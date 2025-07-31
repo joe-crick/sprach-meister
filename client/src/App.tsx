@@ -12,6 +12,7 @@ import Vocabulary from "@/pages/vocabulary";
 import Verbs from "@/pages/verbs";
 import Grammar from "@/pages/grammar";
 import Settings from "@/pages/settings";
+import SentencePractice from "./pages/sentence-practice";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/vocabulary" component={Vocabulary} />
       <Route path="/verbs" component={Verbs} />
       <Route path="/grammar" component={Grammar} />
+      <Route path="/sentence-practice" component={SentencePractice} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

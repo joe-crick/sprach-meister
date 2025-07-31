@@ -9,6 +9,7 @@ export interface Translations {
   vocabulary: string;
   verbs: string;
   grammar: string;
+  sentencePractice: string;
   progress: string;
   settings: string;
 
@@ -106,6 +107,7 @@ export const translations: Record<Language, Translations> = {
     vocabulary: "Vocabulary",
     verbs: "Verbs",
     grammar: "Grammar",
+    sentencePractice: "Sentence Practice",
     progress: "Progress",
     settings: "Settings",
 
@@ -202,6 +204,7 @@ export const translations: Record<Language, Translations> = {
     vocabulary: "Wortschatz",
     verbs: "Verben",
     grammar: "Grammatik",
+    sentencePractice: "Satzübungen",
     progress: "Fortschritt",
     settings: "Einstellungen",
 

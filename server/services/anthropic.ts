@@ -60,6 +60,128 @@ Keep it understandable and not too technical.`;
   }
 }
 
+export async function generateSentencePrompt(words: any[], difficulty: string = "intermediate"): Promise<string> {
+  const wordList = words.map(w => `${w.article ? w.article + ' ' : ''}${w.german} (${w.english}) - ${w.wordType}`).join(", ");
+  
+  const difficultyInstructions = {
+    beginner: "Create a simple, short sentence using basic word order.",
+    intermediate: "Create a more complex sentence that may use subordinate clauses or specific grammatical structures.",
+    advanced: "Create a sophisticated sentence that demonstrates advanced German grammar and complex structures."
+  };
+
+  const systemPrompt = `You are a German language teacher creating sentence practice exercises for B1-level learners. Generate creative, realistic prompts that encourage proper German grammar usage.`;
+
+  const userPrompt = `Create a sentence practice prompt using these German words: ${wordList}
+
+Difficulty level: ${difficulty}
+${difficultyInstructions[difficulty as keyof typeof difficultyInstructions] || difficultyInstructions.intermediate}
+
+Requirements:
+1. The prompt should be engaging and contextual
+2. Encourage use of ALL provided words
+3. Specify any particular grammar focus (cases, verb position, etc.)
+4. Make it realistic and practical for B1 learners
+5. Keep instructions clear and concise
+
+Provide ONLY the prompt text, no additional explanation.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
+      system: systemPrompt,
+      max_tokens: 300,
+      messages: [
+        { role: 'user', content: userPrompt }
+      ],
+    });
+
+    return response.content[0].text;
+  } catch (error) {
+    console.error('Error generating sentence prompt:', error);
+    throw new Error('Failed to generate sentence practice prompt');
+  }
+}
+
+export async function evaluateSentence(sentence: string, words: any[], prompt: string): Promise<any> {
+  const wordList = words.map(w => `${w.article ? w.article + ' ' : ''}${w.german} (${w.english})`).join(", ");
+
+  const systemPrompt = `You are an expert German language teacher evaluating student sentences for B1-level learners. Provide constructive, encouraging feedback with specific grammar and vocabulary guidance.
+
+Always respond in valid JSON format with these exact fields:
+{
+  "isCorrect": boolean,
+  "feedback": "string with overall feedback",
+  "correctedSentence": "string with corrected version if needed",
+  "grammarPoints": ["array", "of", "grammar", "observations"],
+  "vocabularyUsage": ["array", "of", "vocabulary", "usage", "notes"]
+}`;
+
+  const userPrompt = `Evaluate this German sentence written by a B1 student:
+
+Student's sentence: "${sentence}"
+Required words to use: ${wordList}
+Original prompt: "${prompt}"
+
+Please evaluate:
+1. Grammar correctness (word order, cases, verb conjugation, articles)
+2. Vocabulary usage (are required words used correctly?)
+3. Sentence structure and flow
+4. Overall appropriateness for B1 level
+
+Provide encouraging feedback even for incorrect attempts. If the sentence needs correction, provide a corrected version. Focus on the most important 2-3 learning points.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
+      system: systemPrompt,
+      max_tokens: 800,
+      messages: [
+        { role: 'user', content: userPrompt }
+      ],
+    });
+
+    return JSON.parse(response.content[0].text);
+  } catch (error) {
+    console.error('Error evaluating sentence:', error);
+    throw new Error('Failed to evaluate sentence');
+  }
+}
+
+export async function generateGrammarSentencePrompt(grammarTopic: string, words: any[], difficulty: string = "intermediate"): Promise<string> {
+  const wordList = words.map(w => `${w.article ? w.article + ' ' : ''}${w.german} (${w.english}) - ${w.wordType}`).join(", ");
+  
+  const systemPrompt = `You are a German language teacher creating targeted grammar practice exercises for B1-level learners. Focus on specific grammatical concepts while incorporating vocabulary.`;
+
+  const userPrompt = `Create a sentence practice prompt that specifically targets the grammar topic "${grammarTopic}" using these German words: ${wordList}
+
+Difficulty level: ${difficulty}
+
+Requirements:
+1. The exercise should require students to demonstrate understanding of "${grammarTopic}"
+2. Incorporate as many of the provided words as possible
+3. Make the grammar focus clear in the instructions
+4. Provide context that makes the grammar usage natural
+5. Keep it appropriate for B1 level
+
+Provide ONLY the prompt text that explains what grammar concept to focus on and what sentence to create.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
+      system: systemPrompt,
+      max_tokens: 400,
+      messages: [
+        { role: 'user', content: userPrompt }
+      ],
+    });
+
+    return response.content[0].text;
+  } catch (error) {
+    console.error('Error generating grammar sentence prompt:', error);
+    throw new Error('Failed to generate grammar-focused sentence prompt');
+  }
+}
+
 export async function generateGrammarExercises(topic: string, language: 'english' | 'german' = 'english'): Promise<string> {
   const isGerman = language === 'german';
   

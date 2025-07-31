@@ -9,13 +9,15 @@ import { useToast } from "@/hooks/use-toast";
 import { VocabularyWordWithProgress } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { GermanWordAudioButton } from "@/components/audio-button";
-import { CheckCircle2, XCircle, RefreshCw, PenTool, Lightbulb, Target } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, PenTool, Lightbulb, Target, BookOpen, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SentencePracticeExercise {
   words: VocabularyWordWithProgress[];
   prompt: string;
   difficulty: string;
+  grammarTopic?: string;
+  type?: string;
 }
 
 interface SentenceFeedback {
@@ -26,15 +28,37 @@ interface SentenceFeedback {
   vocabularyUsage: string[];
 }
 
+// TELC B1 Grammar Topics
+const TELC_B1_GRAMMAR_TOPICS = [
+  "Dativ and Akkusativ cases",
+  "Modal verbs (können, müssen, sollen, wollen, dürfen, mögen)",
+  "Perfect tense (Perfekt)",
+  "Past tense (Präteritum) for common verbs",
+  "Subordinate clauses with 'dass', 'weil', 'wenn'",
+  "Adjective declension",
+  "Comparative and superlative",
+  "Reflexive verbs and pronouns",
+  "Passive voice (basic forms)",
+  "Prepositions with Dativ and Akkusativ",
+  "Two-way prepositions (Wechselpräpositionen)",
+  "Relative clauses",
+  "Infinitive with 'zu'",
+  "Conjunctions (aber, oder, und, denn)",
+  "Word order in main and subordinate clauses"
+];
+
 export default function SentencePractice() {
   const [currentExercise, setCurrentExercise] = useState<SentencePracticeExercise | null>(null);
   const [userSentence, setUserSentence] = useState("");
   const [feedback, setFeedback] = useState<SentenceFeedback | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [exerciseMode, setExerciseMode] = useState<"vocabulary" | "grammar">("vocabulary");
+  const [selectedGrammarTopic, setSelectedGrammarTopic] = useState<string>("");
   const [exerciseHistory, setExerciseHistory] = useState<Array<{
     words: string[];
     sentence: string;
     feedback: SentenceFeedback;
+    grammarTopic?: string;
   }>>([]);
 
   const { toast } = useToast();
@@ -53,7 +77,7 @@ export default function SentencePractice() {
 
   // Generate new exercise mutation
   const generateExerciseMutation = useMutation({
-    mutationFn: async (difficulty: string = "intermediate") => {
+    mutationFn: async ({ difficulty = "intermediate", grammarTopic }: { difficulty?: string; grammarTopic?: string }) => {
       if (!learnedWords || learnedWords.length < 4) {
         throw new Error("Need at least 4 learned words for practice");
       }
@@ -62,7 +86,8 @@ export default function SentencePractice() {
       const shuffled = [...learnedWords].sort(() => 0.5 - Math.random());
       const selectedWords = shuffled.slice(0, 4);
 
-      const response = await apiRequest("POST", "/api/sentence-practice/generate", {
+      const endpoint = grammarTopic ? "/api/sentence-practice/generate-grammar" : "/api/sentence-practice/generate";
+      const requestBody = {
         words: selectedWords.map(w => ({
           german: w.german,
           english: w.english,
@@ -70,8 +95,11 @@ export default function SentencePractice() {
           wordType: w.wordType,
           category: w.category
         })),
-        difficulty
-      });
+        difficulty,
+        ...(grammarTopic && { grammarTopic })
+      };
+
+      const response = await apiRequest("POST", endpoint, requestBody);
 
       return {
         words: selectedWords,
@@ -118,7 +146,8 @@ export default function SentencePractice() {
         setExerciseHistory(prev => [...prev, {
           words: currentExercise.words.map(w => w.german),
           sentence: userSentence,
-          feedback: feedbackData
+          feedback: feedbackData,
+          grammarTopic: currentExercise.grammarTopic
         }].slice(-5)); // Keep last 5 exercises
       }
 
@@ -163,9 +192,17 @@ export default function SentencePractice() {
   // Generate initial exercise on component mount
   useEffect(() => {
     if (learnedWords && learnedWords.length >= 4 && !currentExercise) {
-      generateExerciseMutation.mutate("intermediate");
+      generateExerciseMutation.mutate({ difficulty: "intermediate" });
     }
   }, [learnedWords]);
+
+  const handleGenerateNewExercise = () => {
+    const config = { difficulty: "intermediate" as string };
+    if (exerciseMode === "grammar" && selectedGrammarTopic) {
+      (config as any).grammarTopic = selectedGrammarTopic;
+    }
+    generateExerciseMutation.mutate(config);
+  };
 
   if (wordsLoading) {
     return (
@@ -208,6 +245,58 @@ export default function SentencePractice() {
         </p>
       </div>
 
+      {/* Exercise Mode Selection */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex gap-2">
+              <Button
+                variant={exerciseMode === "vocabulary" ? "default" : "outline"}
+                onClick={() => setExerciseMode("vocabulary")}
+                className="flex items-center gap-2"
+              >
+                <Target className="h-4 w-4" />
+                Vocabulary Practice
+              </Button>
+              <Button
+                variant={exerciseMode === "grammar" ? "default" : "outline"}
+                onClick={() => setExerciseMode("grammar")}
+                className="flex items-center gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                Grammar Practice
+              </Button>
+            </div>
+
+            {exerciseMode === "grammar" && (
+              <div className="flex-1 min-w-[300px]">
+                <select
+                  value={selectedGrammarTopic}
+                  onChange={(e) => setSelectedGrammarTopic(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800"
+                >
+                  <option value="">Select a TELC B1 grammar topic...</option>
+                  {TELC_B1_GRAMMAR_TOPICS.map((topic, index) => (
+                    <option key={index} value={topic}>
+                      {topic}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <Button
+              onClick={handleGenerateNewExercise}
+              disabled={generateExerciseMutation.isPending || (exerciseMode === "grammar" && !selectedGrammarTopic)}
+              className="flex items-center gap-2"
+            >
+              <Zap className="h-4 w-4" />
+              Generate Exercise
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Current Exercise */}
       {currentExercise && (
         <Card>
@@ -215,9 +304,16 @@ export default function SentencePractice() {
             <CardTitle className="flex items-center gap-2">
               <PenTool className="h-5 w-5" />
               Exercise
-              <Badge variant="outline" className="ml-auto">
-                {currentExercise.difficulty}
-              </Badge>
+              <div className="ml-auto flex gap-2">
+                {currentExercise.grammarTopic && (
+                  <Badge variant="secondary" className="text-xs">
+                    {currentExercise.grammarTopic}
+                  </Badge>
+                )}
+                <Badge variant="outline">
+                  {currentExercise.difficulty}
+                </Badge>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -282,7 +378,7 @@ export default function SentencePractice() {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => generateExerciseMutation.mutate("intermediate")}
+                  onClick={handleGenerateNewExercise}
                   disabled={generateExerciseMutation.isPending}
                   className="flex items-center gap-2"
                 >
@@ -370,6 +466,11 @@ export default function SentencePractice() {
                     <span className="text-sm text-gray-500">
                       Words: {exercise.words.join(", ")}
                     </span>
+                    {exercise.grammarTopic && (
+                      <Badge variant="secondary" className="text-xs ml-auto">
+                        {exercise.grammarTopic}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-gray-900 mb-1">{exercise.sentence}</p>
                   <p className="text-sm text-gray-600">{exercise.feedback.feedback}</p>

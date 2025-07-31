@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertVocabularyWordSchema, insertUserProgressSchema, insertLearningSessionSchema, insertUserSettingsSchema } from "@shared/schema";
-import { explainGrammarTopic, generateGrammarExercises } from "./services/anthropic";
+import { explainGrammarTopic, generateGrammarExercises, generateSentencePrompt, evaluateSentence, generateGrammarSentencePrompt } from "./services/anthropic";
 import multer from "multer";
 import Papa from "papaparse";
 
@@ -613,6 +613,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Sentence evaluation error:', error);
       res.status(500).json({ message: "Failed to evaluate sentence" });
+    }
+  });
+
+  app.post("/api/sentence-practice/generate-grammar", async (req, res) => {
+    try {
+      const { words, grammarTopic, difficulty = "intermediate" } = req.body;
+      
+      if (!words || !Array.isArray(words) || words.length < 2) {
+        return res.status(400).json({ message: "Need at least 2 words for sentence practice" });
+      }
+
+      if (!grammarTopic) {
+        return res.status(400).json({ message: "Grammar topic is required" });
+      }
+
+      const prompt = await generateGrammarSentencePrompt(grammarTopic, words, difficulty);
+      
+      res.json({
+        prompt,
+        difficulty,
+        grammarTopic,
+        type: "grammar-focused"
+      });
+    } catch (error) {
+      console.error('Grammar sentence practice generation error:', error);
+      res.status(500).json({ message: "Failed to generate grammar sentence practice" });
     }
   });
 
