@@ -729,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export vocabulary as CSV
   app.get("/api/export/vocabulary", async (req, res) => {
     try {
-      const words = await storage.getAllWords();
+      const words = await storage.getVocabularyWords();
       
       // CSV headers
       const headers = [
