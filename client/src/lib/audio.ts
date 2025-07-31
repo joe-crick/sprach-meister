@@ -39,16 +39,26 @@ class WebSpeechAudioService implements AudioService {
       utterance.rate = this.rate;
       utterance.volume = this.volume;
       
-      // Try to find a German voice
-      const voices = this.synthesis.getVoices();
-      const germanVoice = voices.find(voice => 
-        voice.lang.startsWith('de') || 
-        voice.name.toLowerCase().includes('german') ||
-        voice.name.toLowerCase().includes('deutsch')
-      );
-      
-      if (germanVoice) {
-        utterance.voice = germanVoice;
+      // Function to find and set the voice
+      const setVoice = () => {
+        const voices = this.synthesis.getVoices();
+        const germanVoice = voices.find(voice => 
+          voice.lang.startsWith('de') || 
+          voice.name.toLowerCase().includes('german') ||
+          voice.name.toLowerCase().includes('deutsch')
+        );
+        
+        if (germanVoice) {
+          utterance.voice = germanVoice;
+        }
+      };
+
+      // Set voice immediately if available
+      setVoice();
+
+      // If no voices are loaded yet, wait for them
+      if (this.synthesis.getVoices().length === 0) {
+        this.synthesis.addEventListener('voiceschanged', setVoice, { once: true });
       }
 
       utterance.onend = () => {
@@ -61,7 +71,14 @@ class WebSpeechAudioService implements AudioService {
         reject(new Error(`Speech synthesis error: ${event.error}`));
       };
 
-      this.synthesis.speak(utterance);
+      // Small delay to ensure browser is ready
+      setTimeout(() => {
+        try {
+          this.synthesis.speak(utterance);
+        } catch (error) {
+          reject(new Error(`Failed to start speech synthesis: ${error}`));
+        }
+      }, 100);
     });
   }
 

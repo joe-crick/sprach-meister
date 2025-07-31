@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX, Loader2 } from "lucide-react";
 import { useAudio } from "@/lib/audio";
@@ -176,12 +176,12 @@ export function SentenceAudioButton({
   };
 
   // Auto-play when enabled (useful for learning sessions)
-  useState(() => {
+  useEffect(() => {
     if (autoPlay && sentence && isSupported) {
       const timer = setTimeout(handleSpeak, 500); // Small delay to prevent overlap
       return () => clearTimeout(timer);
     }
-  });
+  }, [autoPlay, sentence, isSupported]);
 
   if (!isSupported) {
     return null;
