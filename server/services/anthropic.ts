@@ -150,7 +150,7 @@ export interface AIGrammarFeedback {
   feedback: string;
   corrections: string[];
   additionalInfo: string;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  status: 'Good' | 'Has Some Issues' | 'Needs Work';
 }
 
 export async function validateGrammarExplanation(explanation: GrammarExplanation): Promise<AIGrammarFeedback> {
@@ -202,13 +202,25 @@ Respond with JSON in this exact format:
       try {
         const result = JSON.parse(text);
         
+        // Convert accuracy to status
+        const accuracy = Math.max(0, Math.min(100, result.accuracy || 0));
+        let status: 'Good' | 'Has Some Issues' | 'Needs Work';
+        
+        if (accuracy >= 80) {
+          status = 'Good';
+        } else if (accuracy >= 60) {
+          status = 'Has Some Issues';
+        } else {
+          status = 'Needs Work';
+        }
+
         return {
           isCorrect: result.isCorrect || false,
-          accuracy: Math.max(0, Math.min(100, result.accuracy || 0)),
+          accuracy: accuracy,
           feedback: result.feedback || "Unable to provide feedback at this time.",
           corrections: Array.isArray(result.corrections) ? result.corrections : [],
           additionalInfo: result.additionalInfo || "",
-          grade: ['A', 'B', 'C', 'D', 'F'].includes(result.grade) ? result.grade : 'F'
+          status: status
         };
       } catch (parseError) {
         console.error("Failed to parse grammar validation JSON:", text);

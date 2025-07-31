@@ -40,7 +40,7 @@ interface AIFeedback {
   feedback: string;
   corrections: string[];
   additionalInfo: string;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  status: 'Good' | 'Has Some Issues' | 'Needs Work';
 }
 
 export default function Grammar() {
@@ -146,13 +146,11 @@ export default function Grammar() {
     setAiFeedback(null);
   };
 
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A': return "text-green-600 bg-green-100";
-      case 'B': return "text-blue-600 bg-blue-100";
-      case 'C': return "text-yellow-600 bg-yellow-100";
-      case 'D': return "text-orange-600 bg-orange-100";
-      case 'F': return "text-red-600 bg-red-100";
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Good': return "text-green-600 bg-green-100";
+      case 'Has Some Issues': return "text-orange-600 bg-orange-100";
+      case 'Needs Work': return "text-red-600 bg-red-100";
       default: return "text-gray-600 bg-gray-100";
     }
   };
@@ -341,8 +339,8 @@ export default function Grammar() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>AI Evaluation Results</span>
-                      <Badge className={cn("text-lg px-3 py-1", getGradeColor(aiFeedback.grade))}>
-                        Grade: {aiFeedback.grade}
+                      <Badge className={cn("text-lg px-3 py-1", getStatusColor(aiFeedback.status))}>
+                        {aiFeedback.status}
                       </Badge>
                     </CardTitle>
                   </CardHeader>
