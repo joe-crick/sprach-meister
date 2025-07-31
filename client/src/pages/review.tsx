@@ -36,11 +36,11 @@ export default function Review() {
   });
 
   const { data: wordsForReview, isLoading } = useQuery<VocabularyWordWithProgress[]>({
-    queryKey: ["/api/vocabulary/all-words-for-review", settings?.reviewSessionSize],
+    queryKey: ["/api/words/for-review", settings?.reviewSessionSize],
     queryFn: async () => {
-      // Always use the "all words for review" endpoint to ensure we always have words to review
+      // Use the proper review endpoint that only shows learned words
       const limit = settings?.reviewSessionSize || 25;
-      const response = await fetch(`/api/vocabulary/all-words-for-review?limit=${limit}`, { credentials: "include" });
+      const response = await fetch(`/api/words/for-review?limit=${limit}`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for review");
       return response.json();
     },

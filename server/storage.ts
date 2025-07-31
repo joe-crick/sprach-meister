@@ -321,8 +321,14 @@ export class MemStorage implements IStorage {
     const wordsWithProgress = await this.getVocabularyWordsWithProgress(userId);
     const now = new Date();
     
+    // Only return learned words (words that have been reviewed at least once)
     return wordsWithProgress
-      .filter(word => word.progress && word.progress.nextReview && new Date(word.progress.nextReview) <= now)
+      .filter(word => 
+        word.progress && 
+        word.progress.lastReviewed && // Must have been learned/reviewed at least once
+        word.progress.nextReview && 
+        new Date(word.progress.nextReview) <= now
+      )
       .sort(() => Math.random() - 0.5) // Randomize order
       .slice(0, limit);
   }

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { VocabularyWordWithProgress } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ArrowRight, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GermanWordAudioButton, SentenceAudioButton } from "@/components/audio-button";
@@ -26,8 +27,10 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
     setShowFeedback(false);
   }, [word.id]); // Reset when word ID changes
 
+  // Determine exercise type based on word type
+  const isNounWithArticle = word.wordType === "noun" && word.article;
   const articles = ["der", "die", "das"];
-  const correctAnswer = word.article;
+  const correctAnswer = isNounWithArticle ? word.article : word.german;
 
   const handleAnswerSelect = (answer: string) => {
     if (showFeedback) return; // Prevent selection after feedback is shown
@@ -38,6 +41,19 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
     setShowFeedback(true);
     
     onAnswer(isCorrect, answer);
+  };
+
+  const handleTranslationSubmit = () => {
+    if (showFeedback) return;
+
+    const userInput = selectedAnswer.toLowerCase().trim();
+    const correctTranslation = word.english.toLowerCase().trim();
+    const isCorrect = userInput === correctTranslation;
+    
+    setAnswerState(isCorrect ? "correct" : "incorrect");
+    setShowFeedback(true);
+    
+    onAnswer(isCorrect, selectedAnswer);
   };
 
   const getGenderColor = (article: string) => {
@@ -58,9 +74,11 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
     }
   };
 
-  return (
-    <div className="text-center">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Choose the correct article:</h2>
+  // Article exercise for nouns
+  if (isNounWithArticle) {
+    return (
+      <div className="text-center">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Choose the correct article:</h2>
       
       {/* Question context */}
       <Card className="mb-6">
@@ -155,6 +173,113 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
               <GermanWordAudioButton 
                 german={word.german} 
                 article={correctAnswer}
+                showLabel={true}
+                variant="outline"
+                size="sm"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Next button */}
+      {showFeedback && (
+        <Button 
+          onClick={onNext}
+          size="lg" 
+          className="bg-secondary hover:bg-secondary/90"
+        >
+          Next Question <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      )}
+    </div>
+    );
+  }
+
+  // Translation exercise for verbs, adjectives, etc.
+  return (
+    <div className="text-center">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Translate this German word:</h2>
+      
+      {/* Question context */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-3">
+              {word.german}
+              <GermanWordAudioButton 
+                german={word.german} 
+                article={word.article || ""} 
+                size="sm"
+              />
+            </div>
+            <div className="text-sm text-gray-500 uppercase">
+              {word.wordType || 'word'}
+            </div>
+            {word.exampleSentence && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-lg text-gray-700 mb-2 flex items-center justify-center gap-2">
+                  {word.exampleSentence}
+                  <SentenceAudioButton 
+                    sentence={word.exampleSentence}
+                    showLabel={false}
+                    size="sm"
+                  />
+                </div>
+                {word.exampleTranslation && (
+                  <div className="text-gray-500 text-sm">
+                    {word.exampleTranslation}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Translation input */}
+      <div className="mb-6">
+        <Input
+          value={selectedAnswer}
+          onChange={(e) => setSelectedAnswer(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && !showFeedback && handleTranslationSubmit()}
+          placeholder="Enter English translation..."
+          disabled={showFeedback}
+          className="text-center text-lg max-w-md mx-auto"
+        />
+        {!showFeedback && (
+          <Button 
+            onClick={handleTranslationSubmit}
+            disabled={!selectedAnswer.trim()}
+            className="mt-4"
+            size="lg"
+          >
+            Submit Answer
+          </Button>
+        )}
+      </div>
+
+      {/* Feedback area */}
+      {showFeedback && (
+        <Card className={cn("mb-6", answerState === "correct" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200")}>
+          <CardContent className="pt-4">
+            <div className={cn("flex items-center justify-center", answerState === "correct" ? "text-green-800" : "text-red-800")}>
+              {answerState === "correct" ? (
+                <>
+                  <CheckCircle className="mr-2 h-5 w-5" />
+                  <span className="font-medium">Correct! "{word.german}" means "{word.english}".</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="mr-2 h-5 w-5" />
+                  <span className="font-medium">Incorrect. "{word.german}" means "{word.english}".</span>
+                </>
+              )}
+            </div>
+            <div className="flex justify-center mt-3">
+              <GermanWordAudioButton 
+                german={word.german} 
+                article={word.article || ""}
                 showLabel={true}
                 variant="outline"
                 size="sm"
