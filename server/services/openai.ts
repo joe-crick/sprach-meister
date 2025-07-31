@@ -180,8 +180,18 @@ Respond with JSON in this exact format:
       additionalInfo: result.additionalInfo || "",
       grade: ['A', 'B', 'C', 'D', 'F'].includes(result.grade) ? result.grade : 'F'
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error validating grammar explanation:", error);
+    
+    // Provide specific error messages for common OpenAI issues
+    if (error.status === 429) {
+      throw new Error("OpenAI quota exceeded. Please check your billing and add credits to your OpenAI account.");
+    } else if (error.status === 401) {
+      throw new Error("Invalid OpenAI API key. Please check your API key is correct.");
+    } else if (error.status === 403) {
+      throw new Error("OpenAI API access denied. Please verify your account permissions.");
+    }
+    
     throw new Error("Failed to validate grammar explanation using AI");
   }
 }

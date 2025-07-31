@@ -592,9 +592,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(feedback);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Grammar validation error:', error);
-      res.status(500).json({ message: "Failed to validate grammar explanation" });
+      
+      // Return specific error message from OpenAI service
+      const errorMessage = error.message || "Failed to validate grammar explanation";
+      res.status(500).json({ message: errorMessage });
     }
   });
 
