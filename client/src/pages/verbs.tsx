@@ -107,6 +107,7 @@ export default function Verbs() {
     total: 0,
     streak: 0
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch vocabulary words to get verbs
   const { data: vocabularyWords = [] } = useQuery({
@@ -151,9 +152,11 @@ export default function Verbs() {
     });
   };
 
-  const validateAnswer = (answer: string) => {
-    if (!currentExercise) return;
+  const validateAnswer = async (answer: string) => {
+    if (!currentExercise || !answer.trim()) return;
 
+    setIsSubmitting(true);
+    
     const correctAnswer = currentExercise.verb.forms[currentExercise.form][currentExercise.person];
     const isCorrect = answer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
 
@@ -182,16 +185,39 @@ export default function Verbs() {
         variant: "destructive",
       });
     }
+
+    setIsSubmitting(false);
   };
 
-  const handleInputBlur = (value: string) => {
-    if (value.trim() && !currentExercise?.hasValidated) {
-      validateAnswer(value);
-    }
+  const handleSubmitAnswer = () => {
+    if (!currentExercise?.userAnswer.trim() || currentExercise.hasValidated) return;
+    validateAnswer(currentExercise.userAnswer);
   };
+
+
 
   const nextExercise = () => {
-    generateExercise();
+    if (!selectedVerb || !selectedForm || availableVerbs.length === 0) return;
+
+    const verb = availableVerbs.find(v => v.infinitive === selectedVerb);
+    if (!verb) return;
+
+    // Cycle through different persons for the same verb and form
+    let nextPerson = 0;
+    if (currentExercise && currentExercise.verb.infinitive === selectedVerb && currentExercise.form === selectedForm) {
+      nextPerson = (currentExercise.person + 1) % 6; // Cycle through all 6 persons
+    } else {
+      nextPerson = Math.floor(Math.random() * 6); // Random person for new verb/form
+    }
+    
+    setCurrentExercise({
+      verb,
+      form: selectedForm,
+      person: nextPerson,
+      userAnswer: "",
+      isCorrect: null,
+      hasValidated: false
+    });
   };
 
   const resetSession = () => {
@@ -364,10 +390,9 @@ export default function Verbs() {
                           ...prev,
                           userAnswer: e.target.value
                         } : null)}
-                        onBlur={(e) => handleInputBlur(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                            handleInputBlur(e.currentTarget.value);
+                          if (e.key === 'Enter' && e.currentTarget.value.trim() && !currentExercise.hasValidated) {
+                            handleSubmitAnswer();
                           }
                         }}
                         placeholder="Enter the conjugated form..."
@@ -378,7 +403,7 @@ export default function Verbs() {
                               : "border-red-500 bg-red-50"
                           )
                         )}
-                        disabled={currentExercise.hasValidated}
+                        disabled={currentExercise.hasValidated || isSubmitting}
                       />
                       {currentExercise.hasValidated && (
                         <div className="flex items-center">
@@ -390,6 +415,24 @@ export default function Verbs() {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Submit Button */}
+                    {!currentExercise.hasValidated && (
+                      <Button 
+                        onClick={handleSubmitAnswer}
+                        disabled={!currentExercise.userAnswer.trim() || isSubmitting}
+                        className="w-full"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Checking...
+                          </>
+                        ) : (
+                          'Submit Answer'
+                        )}
+                      </Button>
+                    )}
                   </div>
 
                   {/* Feedback */}
@@ -420,7 +463,7 @@ export default function Verbs() {
                   {/* Next Button */}
                   {currentExercise.hasValidated && (
                     <Button onClick={nextExercise} className="w-full">
-                      Next Exercise
+                      Next Person ({VERB_FORMS[currentExercise.form].persons[(currentExercise.person + 1) % 6]})
                     </Button>
                   )}
                 </div>
