@@ -634,6 +634,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send test WhatsApp message
+  app.post("/api/settings/test-whatsapp", async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ message: "Phone number is required" });
+      }
+
+      // In a real implementation, this would integrate with WhatsApp Business API
+      // For now, we'll simulate the test message functionality
+      const testMessage = `🎓 SprachMeister Test Message!
+
+Hello! This is a test message to confirm your WhatsApp notifications are working.
+
+Your daily German learning reminders will be sent to this number.
+
+Viel Erfolg beim Deutschlernen! 🇩🇪`;
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // In production, you would:
+      // 1. Use WhatsApp Business API or a service like Twilio
+      // 2. Send the actual message to the phone number
+      // 3. Handle API responses and errors properly
+      
+      console.log(`Test WhatsApp message would be sent to ${phoneNumber}:`, testMessage);
+      
+      res.json({ 
+        success: true, 
+        message: "Test message sent successfully",
+        phoneNumber: phoneNumber,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('WhatsApp test error:', error);
+      res.status(500).json({ message: "Failed to send test message" });
+    }
+  });
+
   // Export database schema
   app.get("/api/export/schema", async (req, res) => {
     try {

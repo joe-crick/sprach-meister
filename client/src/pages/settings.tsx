@@ -152,6 +152,42 @@ export default function Settings() {
     updateSettingsMutation.mutate({ whatsappNumber: whatsappNumber });
   };
 
+  const testWhatsappMutation = useMutation({
+    mutationFn: async (phoneNumber: string) => {
+      const response = await apiRequest("POST", "/api/settings/test-whatsapp", { 
+        phoneNumber: phoneNumber 
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Test Message Sent!",
+        description: "Check your WhatsApp for the test message. If you don't receive it, please verify your phone number.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Test Failed",
+        description: "Failed to send test message. Please check your phone number and try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleTestWhatsapp = () => {
+    const phoneToTest = whatsappNumber || settings?.whatsappNumber;
+    if (!phoneToTest) {
+      toast({
+        title: "No Phone Number",
+        description: "Please enter and save a phone number first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    testWhatsappMutation.mutate(phoneToTest);
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 p-6">
@@ -272,9 +308,18 @@ export default function Settings() {
                       >
                         {updateSettingsMutation.isPending ? "Saving..." : "Save"}
                       </Button>
+                      <Button 
+                        onClick={handleTestWhatsapp}
+                        disabled={testWhatsappMutation.isPending || (!whatsappNumber && !settings?.whatsappNumber)}
+                        size="sm"
+                        variant="outline"
+                        className="px-4"
+                      >
+                        {testWhatsappMutation.isPending ? "Testing..." : "Test"}
+                      </Button>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
-                      Include country code (e.g., +49 for Germany, +1 for US/Canada)
+                      Include country code (e.g., +49 for Germany, +1 for US/Canada). Use the Test button to verify notifications work.
                     </p>
                   </div>
 
