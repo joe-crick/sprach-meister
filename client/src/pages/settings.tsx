@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Globe, MessageCircle, Clock } from "lucide-react";
 
 export default function Settings() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -35,6 +36,13 @@ export default function Settings() {
       return response.json();
     },
   });
+
+  // Initialize whatsapp number when settings load
+  useEffect(() => {
+    if (settings?.whatsappNumber) {
+      setWhatsappNumber(settings.whatsappNumber);
+    }
+  }, [settings?.whatsappNumber]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Partial<UserSettings>) => {
@@ -136,6 +144,12 @@ export default function Settings() {
     if (confirmed) {
       resetProgressMutation.mutate();
     }
+  };
+
+  const handleSaveWhatsappNumber = () => {
+    if (!settings) return;
+    
+    updateSettingsMutation.mutate({ whatsappNumber: whatsappNumber });
   };
 
   if (isLoading) {
@@ -241,14 +255,24 @@ export default function Settings() {
                     <Label htmlFor="whatsappNumber" className="text-sm font-medium text-gray-700 mb-2 block">
                       WhatsApp Phone Number
                     </Label>
-                    <Input
-                      id="whatsappNumber"
-                      type="tel"
-                      placeholder="+1234567890"
-                      value={settings.whatsappNumber || ""}
-                      onChange={(e) => handleSettingChange("whatsappNumber", e.target.value)}
-                      className="w-full"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="whatsappNumber"
+                        type="tel"
+                        placeholder="+1234567890"
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={handleSaveWhatsappNumber}
+                        disabled={updateSettingsMutation.isPending || whatsappNumber === (settings?.whatsappNumber || "")}
+                        size="sm"
+                        className="px-4"
+                      >
+                        {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
                     <p className="text-sm text-gray-500 mt-1">
                       Include country code (e.g., +49 for Germany, +1 for US/Canada)
                     </p>
