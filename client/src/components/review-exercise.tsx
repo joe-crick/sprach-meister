@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { VocabularyWordWithProgress } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,13 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [answerState, setAnswerState] = useState<AnswerState>("none");
   const [showFeedback, setShowFeedback] = useState(false);
+
+  // Reset state when word changes
+  useEffect(() => {
+    setSelectedAnswer("");
+    setAnswerState("none");
+    setShowFeedback(false);
+  }, [word.id]); // Reset when word ID changes
 
   const articles = ["der", "die", "das"];
   const correctAnswer = word.article;
