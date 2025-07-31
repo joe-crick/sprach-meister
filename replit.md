@@ -130,6 +130,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (July 2025)
 
+### SMS Notification System (July 31, 2025)
+- **WhatsApp to SMS Migration**: Replaced WhatsApp notifications with real SMS messaging
+- **Multiple SMS Providers**: Implemented fallback system using TextBelt and SMS.to APIs
+- **Database Schema Update**: Renamed whatsapp_number → phone_number, enable_whatsapp_reminders → enable_sms_reminders
+- **Error Handling**: Added comprehensive error messages for SMS delivery failures
+- **Country Restrictions**: Free SMS services have limitations - Twilio recommended for production
+
 ### OpenAI Removal (July 31, 2025)
 - **Removed OpenAI Integration**: All OpenAI dependencies and services removed from codebase
 - **Anthropic Only**: Grammar validation, vocabulary generation, and memory tips now exclusively use Anthropic Claude

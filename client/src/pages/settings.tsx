@@ -165,10 +165,11 @@ export default function Settings() {
         description: `SMS sent successfully to your phone. ${data.quotaRemaining ? `Remaining free SMS: ${data.quotaRemaining}` : ""}`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to send test SMS";
       toast({
-        title: "Test Failed",
-        description: "Failed to send test notification. Please try again.",
+        title: "SMS Test Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -341,14 +342,22 @@ export default function Settings() {
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-blue-900 mb-2">How SMS Reminders Work</h4>
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">SMS Reminders Information</h4>
                     <ul className="text-sm text-blue-800 space-y-1">
                       <li>• Daily SMS messages sent to remind you to practice German</li>
                       <li>• Messages include motivational content and learning tips</li>
-                      <li>• Standard SMS rates may apply from your carrier</li>
+                      <li>• Free SMS testing may have country restrictions</li>
+                      <li>• For reliable delivery, consider using Twilio or similar services</li>
                       <li>• You can disable reminders anytime in these settings</li>
-                      <li>• SprachMeister respects your privacy and only sends learning reminders</li>
                     </ul>
+                  </div>
+                  
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-amber-900 mb-2">⚠️ SMS Testing Notice</h4>
+                    <p className="text-sm text-amber-800">
+                      Free SMS services may not work in all countries due to abuse prevention. 
+                      If SMS testing fails, the app will still track your learning progress and you can use browser notifications as an alternative.
+                    </p>
                   </div>
                 </>
               )}

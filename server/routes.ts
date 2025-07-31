@@ -643,43 +643,99 @@ Your daily German learning reminders will be sent to this number.
 
 Viel Erfolg beim Deutschlernen! 🇩🇪`;
 
-      try {
-        // Use TextBelt API for free SMS testing (1 free SMS per day per phone number)
-        const response = await fetch('https://textbelt.com/text', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+      // Try multiple SMS services in sequence for better reliability
+      const smsServices = [
+        {
+          name: 'TextBelt',
+          url: 'https://textbelt.com/text',
+          body: {
             phone: phoneNumber,
             message: testMessage,
-            key: 'textbelt' // Free tier key
-          })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          console.log(`SMS sent successfully to ${phoneNumber}. TextBelt response:`, result);
-          res.json({ 
-            success: true, 
-            message: "Test SMS sent successfully",
-            phoneNumber: phoneNumber,
-            timestamp: new Date().toISOString(),
-            quotaRemaining: result.quotaRemaining
-          });
-        } else {
-          console.error('TextBelt API error:', result);
-          res.status(400).json({ 
-            success: false,
-            message: result.error || "Failed to send SMS",
-            phoneNumber: phoneNumber
-          });
+            key: 'textbelt'
+          }
+        },
+        {
+          name: 'SMSApi (alternative)',
+          url: 'https://api.sms.to/sms/send',
+          headers: {
+            'Authorization': 'Bearer demo', // Demo key for testing
+            'Content-Type': 'application/json'
+          },
+          body: {
+            to: phoneNumber,
+            message: testMessage,
+            sender_id: 'SprachMeister'
+          }
         }
-      } catch (apiError) {
-        console.error('SMS API error:', apiError);
-        res.status(500).json({ message: "SMS service temporarily unavailable" });
+      ];
+
+      let lastError = null;
+      
+      for (const service of smsServices) {
+        try {
+          console.log(`Attempting SMS via ${service.name} to ${phoneNumber}`);
+          
+          const response = await fetch(service.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...service.headers
+            },
+            body: JSON.stringify(service.body)
+          });
+
+          const result = await response.json();
+          console.log(`${service.name} response:`, result);
+
+          // Handle TextBelt response format
+          if (service.name === 'TextBelt' && result.success) {
+            res.json({ 
+              success: true, 
+              message: `Test SMS sent successfully via ${service.name}`,
+              phoneNumber: phoneNumber,
+              timestamp: new Date().toISOString(),
+              quotaRemaining: result.quotaRemaining,
+              service: service.name
+            });
+            return;
+          }
+          
+          // Handle SMS.to response format
+          if (service.name.includes('SMSApi') && result.success) {
+            res.json({ 
+              success: true, 
+              message: `Test SMS sent successfully via ${service.name}`,
+              phoneNumber: phoneNumber,
+              timestamp: new Date().toISOString(),
+              service: service.name
+            });
+            return;
+          }
+          
+          // If this service failed, try the next one
+          lastError = result.error || result.message || 'Unknown error';
+          console.log(`${service.name} failed:`, lastError);
+          
+        } catch (apiError) {
+          console.error(`${service.name} API error:`, apiError);
+          lastError = apiError.message;
+        }
       }
+      
+      // If all services failed, provide helpful error message
+      res.status(400).json({ 
+        success: false,
+        message: `SMS delivery failed. This might be due to: 
+        1. Country restrictions on free SMS services
+        2. Invalid phone number format
+        3. SMS service limitations
+        
+        Last error: ${lastError}
+        
+        For production use, consider setting up Twilio, AWS SNS, or another paid SMS service.`,
+        phoneNumber: phoneNumber,
+        suggestion: "Try a different phone number or consider using browser notifications as an alternative."
+      });
     } catch (error) {
       console.error('SMS test error:', error);
       res.status(500).json({ message: "Failed to send test SMS" });
