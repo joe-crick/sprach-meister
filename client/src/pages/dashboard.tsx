@@ -147,7 +147,7 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <h3 className="text-xl font-semibold mb-2">Practice Learned Words</h3>
               <p className="text-purple-100 mb-4">Review your learned vocabulary anytime</p>
-              <Link href="/review?mode=all">
+              <Link href="/practice">
                 <Button className="bg-white text-purple-600 hover:bg-purple-50">
                   Start Practice
                 </Button>

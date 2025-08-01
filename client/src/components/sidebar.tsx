@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Brain, RotateCcw, TrendingUp, Book, FileText, GraduationCap, PenTool, Settings } from "lucide-react";
+import { Home, Brain, RotateCcw, TrendingUp, Book, FileText, GraduationCap, PenTool, Settings, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { UserSettings } from "@shared/schema";
@@ -26,6 +26,7 @@ export default function Sidebar() {
     { name: t.dashboard, href: "/", icon: Home },
     { name: t.learn, href: "/learn", icon: Brain },
     { name: t.review, href: "/review", icon: RotateCcw },
+    { name: "Practice", href: "/practice", icon: Target },
     { name: t.progress, href: "/progress", icon: TrendingUp },
     { name: t.vocabulary, href: "/vocabulary", icon: Book },
     { name: t.verbs, href: "/verbs", icon: FileText },
