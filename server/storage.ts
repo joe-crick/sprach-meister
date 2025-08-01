@@ -144,6 +144,7 @@ export class MemStorage implements IStorage {
     const word: VocabularyWord = {
       ...insertWord,
       id,
+      article: insertWord.article || null,
       createdAt: new Date(),
     };
     this.vocabularyWords.set(id, word);
@@ -231,6 +232,7 @@ export class MemStorage implements IStorage {
     const progress: UserProgress = {
       ...insertProgress,
       id,
+      userId: insertProgress.userId || "default_user",
       createdAt: new Date(),
     };
     this.userProgress.set(id, progress);
@@ -255,6 +257,7 @@ export class MemStorage implements IStorage {
     const session: LearningSession = {
       ...insertSession,
       id,
+      userId: insertSession.userId || "default_user",
       createdAt: new Date(),
     };
     this.learningSessions.set(id, session);
@@ -286,6 +289,7 @@ export class MemStorage implements IStorage {
     const settings: UserSettings = {
       ...insertSettings,
       id,
+      userId: insertSettings.userId || "default_user",
       createdAt: new Date(),
     };
     this.userSettings.set(id, settings);
@@ -308,7 +312,7 @@ export class MemStorage implements IStorage {
     return words.map(word => {
       const progress = progressList.find(p => p.wordId === word.id);
       const accuracyRate = progress ? 
-        (progress.correctCount / Math.max(progress.correctCount + progress.incorrectCount, 1)) * 100 : 0;
+        ((progress.correctCount || 0) / Math.max((progress.correctCount || 0) + (progress.incorrectCount || 0), 1)) * 100 : 0;
       
       const daysUntilReview = progress?.nextReview ? 
         Math.ceil((new Date(progress.nextReview).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
