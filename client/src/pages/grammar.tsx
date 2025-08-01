@@ -281,11 +281,12 @@ export default function Grammar() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-700">
-                      {exercises}
-                    </div>
-                  </div>
+                  <Alert>
+              <Lightbulb className="h-4 w-4" />
+              <AlertDescription className="text-base prose prose-sm max-w-none">
+                <ReactMarkdown>{exercises}</ReactMarkdown>
+              </AlertDescription>
+            </Alert>
                 </CardContent>
               </Card>
             )}
