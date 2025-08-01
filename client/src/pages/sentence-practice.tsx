@@ -12,7 +12,7 @@ import { GermanWordAudioButton } from "@/components/audio-button";
 import { CheckCircle2, XCircle, RefreshCw, PenTool, Lightbulb, Target, BookOpen, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ReactMarkdown from "react-markdown";
-import LoadingSpinner from "@/lib/LoadingSpinner";
+import LoadingSpinner from "@/lib/loading-spinner";
 
 interface SentencePracticeExercise {
   words: VocabularyWordWithProgress[];
