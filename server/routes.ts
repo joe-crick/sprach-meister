@@ -150,28 +150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "default_user";
       const limit = parseInt(req.query.limit as string) || 50;
-      const category = req.query.category as string;
-      
-      // Get all words with progress, not just due ones
-      const allWords = await storage.getVocabularyWords();
-      const wordsWithProgress = await Promise.all(
-        allWords.map(async (word: any) => {
-          const progress = await storage.getUserProgressForWord(userId, word.id);
-          return { ...word, progress };
-        })
-      );
-
-      // Filter by category if specified
-      let filteredWords = wordsWithProgress;
-      if (category && category !== "all") {
-        filteredWords = wordsWithProgress.filter((word: any) => word.category === category);
-      }
-
-      // Shuffle and limit
-      const shuffled = filteredWords.sort(() => 0.5 - Math.random());
-      const limitedWords = shuffled.slice(0, limit);
-
-      res.json(limitedWords);
+      const words = await storage.getAllWordsForReview(userId, limit);
+      res.json(words);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch words for review" });
     }

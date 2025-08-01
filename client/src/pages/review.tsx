@@ -207,10 +207,12 @@ export default function Review() {
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">No Words Due for Review</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              {isAllWordsMode ? "No Words Available for Practice" : "No Words Due for Review"}
+            </h2>
             <p className="text-gray-600 mb-6">
               {isAllWordsMode 
-                ? "No words available for practice. Add some vocabulary first!"
+                ? "You haven't learned any words yet. Start by learning some vocabulary first, then come back here to practice!"
                 : "Excellent! You're all caught up with your reviews. Come back later or start learning new words."
               }
             </p>
