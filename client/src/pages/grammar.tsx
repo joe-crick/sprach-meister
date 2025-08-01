@@ -8,6 +8,7 @@ import { BookOpen, Search, Lightbulb, FileText } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { UserSettings } from "@shared/schema";
 import { useTranslation, Language } from "@/lib/translations";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import ReactMarkdown from "react-markdown";
 
 export default function Grammar() {
@@ -260,9 +261,12 @@ export default function Grammar() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose max-w-none">
-                    <ReactMarkdown>{explanation}</ReactMarkdown>
-                  </div>
+                  <Alert>
+              <Lightbulb className="h-4 w-4" />
+              <AlertDescription className="text-base prose prose-sm max-w-none">
+                <ReactMarkdown>{explanation}</ReactMarkdown>
+              </AlertDescription>
+            </Alert>
                 </CardContent>
               </Card>
             )}
