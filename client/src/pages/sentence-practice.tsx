@@ -13,6 +13,8 @@ import { CheckCircle2, XCircle, RefreshCw, PenTool, Lightbulb, Target, BookOpen,
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ReactMarkdown from "react-markdown";
 import LoadingSpinner from "@/lib/loading-spinner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface SentencePracticeExercise {
   words: VocabularyWordWithProgress[];
@@ -174,6 +176,8 @@ export default function SentencePractice() {
   };
 
   // Generate initial exercise on component mount
+  // This useEffect ensures an exercise is loaded when the component first mounts, but
+  // not on subsequent re-renders unless learnedWords changes.
   useEffect(() => {
     if (learnedWords && learnedWords.length >= 4 && !currentExercise) {
       handleGenerateNewExercise();
@@ -186,6 +190,12 @@ export default function SentencePractice() {
       (config as any).grammarTopic = selectedGrammarTopic;
     }
     generateExerciseMutation.mutate(config);
+  };
+
+  const handleSetExerciseMode = (mode: "vocabulary" | "grammar") => {
+    setExerciseMode(mode);
+    // Explicitly generate a new exercise when the mode changes
+    handleGenerateNewExercise();
   };
 
   if (wordsLoading) {
@@ -233,24 +243,27 @@ export default function SentencePractice() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="flex gap-2">
-              <Button
-                variant={exerciseMode === "vocabulary" ? "default" : "outline"}
-                onClick={() => setExerciseMode("vocabulary")}
-                className="flex items-center gap-2"
-              >
-                <Target className="h-4 w-4" />
-                Vocabulary Practice
-              </Button>
-              <Button
-                variant={exerciseMode === "grammar" ? "default" : "outline"}
-                onClick={() => setExerciseMode("grammar")}
-                className="flex items-center gap-2"
-              >
-                <BookOpen className="h-4 w-4" />
-                Grammar Practice
-              </Button>
-            </div>
+            {/* The radio group replaces the two buttons */}
+            <RadioGroup
+              onValueChange={handleSetExerciseMode}
+              value={exerciseMode}
+              className="flex items-center space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="vocabulary" id="vocabulary-mode" />
+                <Label htmlFor="vocabulary-mode" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Vocabulary Practice
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="grammar" id="grammar-mode" />
+                <Label htmlFor="grammar-mode" className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Grammar Practice
+                </Label>
+              </div>
+            </RadioGroup>
 
             {exerciseMode === "grammar" && (
               <div className="flex-1 min-w-[300px]">
@@ -269,6 +282,7 @@ export default function SentencePractice() {
               </div>
             )}
 
+            {/* The "Generate Exercise" button remains the same */}
             <Button
               onClick={handleGenerateNewExercise}
               disabled={generateExerciseMutation.isPending || (exerciseMode === "grammar" && !selectedGrammarTopic)}
