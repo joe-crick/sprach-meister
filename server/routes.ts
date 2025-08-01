@@ -123,6 +123,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Learning-specific routes
+  app.get("/api/vocabulary/words-with-progress", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "default_user";
+      const words = await storage.getVocabularyWordsWithProgress(userId);
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch words with progress" });
+    }
+  });
+
   app.get("/api/vocabulary/words-for-learning", async (req, res) => {
     try {
       const userId = req.query.userId as string || "default_user";
