@@ -64,6 +64,7 @@ export class MemStorage implements IStorage {
         article: "die",
         english: "menu",
         category: "Food & Dining",
+        wordType: "noun",
         exampleSentence: "Ich möchte gerne die Speisekarte sehen.",
         exampleTranslation: "I would like to see the menu, please.",
         memoryTip: "'Speise' means food/dish, 'Karte' means card - so 'Speisekarte' is literally a 'food card' or menu."
@@ -73,7 +74,8 @@ export class MemStorage implements IStorage {
         article: "der",
         english: "coffee",
         category: "Food & Dining",
-        exampleSentence: "Ich trinke gerne der Kaffee am Morgen.",
+        wordType: "noun",
+        exampleSentence: "Ich trinke gerne Kaffee am Morgen.",
         exampleTranslation: "I like to drink coffee in the morning.",
         memoryTip: "Coffee is masculine in German - remember 'der Kaffee'."
       },
@@ -82,6 +84,7 @@ export class MemStorage implements IStorage {
         article: "das",
         english: "restaurant",
         category: "Food & Dining",
+        wordType: "noun",
         exampleSentence: "Das Restaurant ist sehr gut.",
         exampleTranslation: "The restaurant is very good.",
         memoryTip: "Restaurant is neuter - 'das Restaurant'."
@@ -91,6 +94,7 @@ export class MemStorage implements IStorage {
         article: "der",
         english: "train station",
         category: "Transportation",
+        wordType: "noun",
         exampleSentence: "Der Bahnhof ist nicht weit von hier.",
         exampleTranslation: "The train station is not far from here.",
         memoryTip: "'Bahn' means railway, 'Hof' means yard - so 'Bahnhof' is a railway yard."
@@ -100,6 +104,7 @@ export class MemStorage implements IStorage {
         article: "die",
         english: "tram",
         category: "Transportation",
+        wordType: "noun",
         exampleSentence: "Die Straßenbahn kommt alle 10 Minuten.",
         exampleTranslation: "The tram comes every 10 minutes.",
         memoryTip: "'Straße' means street, 'Bahn' means railway - street railway = tram."
@@ -318,6 +323,21 @@ export class MemStorage implements IStorage {
   }
 
   async getWordsForReview(userId = "default_user", limit = 25): Promise<VocabularyWordWithProgress[]> {
+    const wordsWithProgress = await this.getVocabularyWordsWithProgress(userId);
+    
+    // Return only words that are due for review (scheduled review)
+    return wordsWithProgress
+      .filter(word => 
+        word.progress && 
+        word.progress.lastReviewed && 
+        word.progress.nextReview &&
+        new Date() >= new Date(word.progress.nextReview)
+      )
+      .sort(() => Math.random() - 0.5) // Randomize order
+      .slice(0, limit);
+  }
+
+  async getAllWordsForReview(userId = "default_user", limit = 50): Promise<VocabularyWordWithProgress[]> {
     const wordsWithProgress = await this.getVocabularyWordsWithProgress(userId);
     
     // Return all learned words (words that have been reviewed at least once)
