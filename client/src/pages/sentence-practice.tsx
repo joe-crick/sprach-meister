@@ -12,6 +12,7 @@ import { GermanWordAudioButton } from "@/components/audio-button";
 import { CheckCircle2, XCircle, RefreshCw, PenTool, Lightbulb, Target, BookOpen, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ReactMarkdown from "react-markdown";
+import LoadingSpinner from "@/lib/LoadingSpinner";
 
 interface SentencePracticeExercise {
   words: VocabularyWordWithProgress[];
@@ -175,7 +176,7 @@ export default function SentencePractice() {
   // Generate initial exercise on component mount
   useEffect(() => {
     if (learnedWords && learnedWords.length >= 4 && !currentExercise) {
-      generateExerciseMutation.mutate({ difficulty: "intermediate" });
+      handleGenerateNewExercise();
     }
   }, [learnedWords]);
 
@@ -190,8 +191,8 @@ export default function SentencePractice() {
   if (wordsLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div className="text-center flex flex-col items-center justify-center">
+          <LoadingSpinner size="h-8 w-8" color="border-blue-600" border="border-2" />
           <p className="mt-2 text-gray-600">Loading your vocabulary...</p>
         </div>
       </div>
@@ -273,7 +274,11 @@ export default function SentencePractice() {
               disabled={generateExerciseMutation.isPending || (exerciseMode === "grammar" && !selectedGrammarTopic)}
               className="flex items-center gap-2"
             >
-              <Zap className="h-4 w-4" />
+              {generateExerciseMutation.isPending ? (
+                <LoadingSpinner size="h-4 w-4" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
               Generate Exercise
             </Button>
           </div>
@@ -356,7 +361,11 @@ export default function SentencePractice() {
                   disabled={!userSentence.trim() || submitSentenceMutation.isPending}
                   className="flex items-center gap-2"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
+                  {submitSentenceMutation.isPending ? (
+                    <LoadingSpinner size="h-4 w-4" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   Check Sentence
                 </Button>
                 <Button 
