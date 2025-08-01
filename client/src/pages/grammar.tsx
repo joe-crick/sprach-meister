@@ -8,6 +8,7 @@ import { BookOpen, Search, Lightbulb, FileText } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { UserSettings } from "@shared/schema";
 import { useTranslation, Language } from "@/lib/translations";
+import ReactMarkdown from "react-markdown";
 
 export default function Grammar() {
   const [grammarTopic, setGrammarTopic] = useState("");
@@ -260,9 +261,7 @@ export default function Grammar() {
                 </CardHeader>
                 <CardContent>
                   <div className="prose max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-700">
-                      {explanation}
-                    </div>
+                    <ReactMarkdown>{explanation}</ReactMarkdown>
                   </div>
                 </CardContent>
               </Card>
