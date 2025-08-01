@@ -10,6 +10,7 @@ import { UserSettings } from "@shared/schema";
 import { useTranslation, Language } from "@/lib/translations";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ReactMarkdown from "react-markdown";
+import LoadingSpinner from "@lib//loading-spinner";
 
 export default function Grammar() {
   const [grammarTopic, setGrammarTopic] = useState("");
@@ -199,11 +200,13 @@ export default function Grammar() {
                     disabled={isLoadingExplanation || !grammarTopic.trim()}
                     className="w-full"
                   >
-                    <Lightbulb className="h-4 w-4 mr-2" />
-                    {isLoadingExplanation 
-                      ? (currentLanguage === 'german' ? "Erkläre..." : "Explaining...") 
-                      : (currentLanguage === 'german' ? "Erklären" : "Explain")
-                    }
+                    {isLoadingExplanation ? <LoadingSpinner size="h-5 w-5" /> : <Lightbulb className="h-4 w-4" />}
+                    <span className="ml-2">
+                      {isLoadingExplanation 
+                        ? (currentLanguage === 'german' ? "Erkläre..." : "Explaining...") 
+                        : (currentLanguage === 'german' ? "Erklären" : "Explain")
+                      }
+                    </span>
                   </Button>
                   
                   <Button
@@ -212,11 +215,13 @@ export default function Grammar() {
                     variant="outline"
                     className="w-full"
                   >
-                    <FileText className="h-4 w-4 mr-2" />
-                    {isLoadingExercises 
-                      ? (currentLanguage === 'german' ? "Erstelle..." : "Generating...") 
-                      : (currentLanguage === 'german' ? "Übungen" : "Exercises")
-                    }
+                    {isLoadingExercises ? <LoadingSpinner size="h-5 w-5" /> : <FileText className="h-4 w-4" />}
+                    <span className="ml-2">
+                      {isLoadingExercises 
+                        ? (currentLanguage === 'german' ? "Erstelle..." : "Generating...") 
+                        : (currentLanguage === 'german' ? "Übungen" : "Exercises")
+                      }
+                    </span>
                   </Button>
 
                   <Button
@@ -251,6 +256,15 @@ export default function Grammar() {
 
           {/* Results Section */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Loading State for Results */}
+            {(isLoadingExplanation || isLoadingExercises) && (
+              <Card>
+                <CardContent className="flex items-center justify-center py-12">
+                  <LoadingSpinner size="h-10 w-10" border="border-4" color="border-gray-400" />
+                </CardContent>
+              </Card>
+            )}
+
             {/* Explanation Card */}
             {explanation && (
               <Card>
@@ -262,11 +276,11 @@ export default function Grammar() {
                 </CardHeader>
                 <CardContent>
                   <Alert>
-              <Lightbulb className="h-4 w-4" />
-              <AlertDescription className="text-base prose prose-sm max-w-none">
-                <ReactMarkdown>{explanation}</ReactMarkdown>
-              </AlertDescription>
-            </Alert>
+                    <Lightbulb className="h-4 w-4" />
+                    <AlertDescription className="text-base prose prose-sm max-w-none">
+                      <ReactMarkdown>{explanation}</ReactMarkdown>
+                    </AlertDescription>
+                  </Alert>
                 </CardContent>
               </Card>
             )}
@@ -282,17 +296,17 @@ export default function Grammar() {
                 </CardHeader>
                 <CardContent>
                   <Alert>
-              <Lightbulb className="h-4 w-4" />
-              <AlertDescription className="text-base prose prose-sm max-w-none">
-                <ReactMarkdown>{exercises}</ReactMarkdown>
-              </AlertDescription>
-            </Alert>
+                    <Lightbulb className="h-4 w-4" />
+                    <AlertDescription className="text-base prose prose-sm max-w-none">
+                      <ReactMarkdown>{exercises}</ReactMarkdown>
+                    </AlertDescription>
+                  </Alert>
                 </CardContent>
               </Card>
             )}
 
             {/* Empty State */}
-            {!explanation && !exercises && (
+            {!explanation && !exercises && !(isLoadingExplanation || isLoadingExercises) && (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
                   <div className="text-center">
