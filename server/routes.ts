@@ -102,16 +102,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let duplicatesRemoved = 0;
       
       // For each group with duplicates, keep the first one and delete the rest
-      const entries = Array.from(duplicateMap.entries());
-      for (const [germanWord, duplicates] of entries) {
+      for (const [germanWord, duplicates] of duplicateMap.entries()) {
         if (duplicates.length > 1) {
-          // Sort by creation date, keep the oldest
-          duplicates.sort((a: any, b: any) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+          console.log(`Found ${duplicates.length} duplicates for word: ${germanWord}`);
           
-          // Delete all but the first one
+          // Sort by creation date, keep the oldest
+          duplicates.sort((a: any, b: any) => {
+            const aDate = new Date(a.createdAt || 0).getTime();
+            const bDate = new Date(b.createdAt || 0).getTime();
+            return aDate - bDate;
+          });
+          
+          const keepWord = duplicates[0];
+          console.log(`Keeping word: ${keepWord.german} (${keepWord.id})`);
+          
+          // Delete all but the first one, including their progress records
           for (let i = 1; i < duplicates.length; i++) {
-            await storage.deleteVocabularyWord(duplicates[i].id);
-            duplicatesRemoved++;
+            const duplicateWord = duplicates[i];
+            console.log(`Deleting duplicate: ${duplicateWord.german} (${duplicateWord.id})`);
+            
+            try {
+              // First delete any progress records for this word
+              console.log(`Deleting progress records for word ${duplicateWord.id}`);
+              const progressDeleted = await storage.deleteUserProgressByWordId(duplicateWord.id);
+              console.log(`Progress deletion result: ${progressDeleted}`);
+              
+              // Then delete the word itself
+              console.log(`Deleting vocabulary word ${duplicateWord.id}`);
+              const deleted = await storage.deleteVocabularyWord(duplicateWord.id);
+              console.log(`Word deletion result: ${deleted}`);
+              
+              if (deleted) {
+                duplicatesRemoved++;
+              }
+            } catch (deleteError) {
+              console.error(`Error deleting duplicate word ${duplicateWord.id}:`, deleteError);
+              console.error('Full error:', deleteError);
+              // Continue with other duplicates even if one fails
+            }
           }
         }
       }

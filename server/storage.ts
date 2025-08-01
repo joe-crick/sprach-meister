@@ -20,6 +20,7 @@ export interface IStorage {
   createUserProgress(progress: InsertUserProgress): Promise<UserProgress>;
   updateUserProgress(id: string, progress: Partial<UserProgress>): Promise<UserProgress | undefined>;
   createOrUpdateUserProgressForWord(wordId: string, userId: string, correct: boolean): Promise<UserProgress>;
+  deleteUserProgressByWordId(wordId: string): Promise<boolean>;
   
   // Learning sessions
   getLearningSession(id: string): Promise<LearningSession | undefined>;
@@ -246,6 +247,18 @@ export class MemStorage implements IStorage {
     const updatedProgress = { ...progress, ...updates };
     this.userProgress.set(id, updatedProgress);
     return updatedProgress;
+  }
+
+  async deleteUserProgressByWordId(wordId: string): Promise<boolean> {
+    const progressToDelete = Array.from(this.userProgress.entries())
+      .filter(([_, progress]) => progress.wordId === wordId);
+    
+    let deleted = false;
+    for (const [id, _] of progressToDelete) {
+      this.userProgress.delete(id);
+      deleted = true;
+    }
+    return deleted;
   }
 
   async getLearningSession(id: string): Promise<LearningSession | undefined> {
@@ -568,6 +581,18 @@ export class DatabaseStorage implements IStorage {
   async updateLearningSession(id: string, sessionUpdate: Partial<LearningSession>): Promise<LearningSession | undefined> {
     const [updated] = await db.update(learningSessions).set(sessionUpdate).where(eq(learningSessions.id, id)).returning();
     return updated || undefined;
+  }
+
+  async deleteUserProgressByWordId(wordId: string): Promise<boolean> {
+    try {
+      await db
+        .delete(userProgress)
+        .where(eq(userProgress.wordId, wordId));
+      return true;
+    } catch (error) {
+      console.error(`Error deleting progress for word ${wordId}:`, error);
+      return false;
+    }
   }
 
   async getRecentSessions(userId = "default_user", limit = 10): Promise<LearningSession[]> {
