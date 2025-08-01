@@ -136,16 +136,6 @@ export default function SentencePractice() {
     },
     onSuccess: (feedbackData) => {
       setFeedback(feedbackData);
-      
-      // Add to history
-      if (currentExercise) {
-        setExerciseHistory(prev => [...prev, {
-          words: currentExercise.words.map(w => w.german),
-          sentence: userSentence,
-          feedback: feedbackData,
-          grammarTopic: currentExercise.grammarTopic
-        }].slice(-5)); // Keep last 5 exercises
-      }
 
       toast({
         title: feedbackData.isCorrect ? "Great job!" : "Keep practicing!",
@@ -439,40 +429,6 @@ export default function SentencePractice() {
                 </CardContent>
               </Card>
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Exercise History */}
-      {exerciseHistory.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Practice</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {exerciseHistory.slice().reverse().map((exercise, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    {exercise.feedback.isCorrect ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-600" />
-                    )}
-                    <span className="text-sm text-gray-500">
-                      Words: {exercise.words.join(", ")}
-                    </span>
-                    {exercise.grammarTopic && (
-                      <Badge variant="secondary" className="text-xs ml-auto">
-                        {exercise.grammarTopic}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-gray-900 mb-1">{exercise.sentence}</p>
-                  <p className="text-sm text-gray-600">{exercise.feedback.feedback}</p>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       )}
