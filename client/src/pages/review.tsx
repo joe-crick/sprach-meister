@@ -44,8 +44,8 @@ export default function Review() {
       // For "practice all learned words" mode, use endpoint that shows all learned words
       // For regular review, use endpoint that shows only due words
       const endpoint = isAllWordsMode 
-        ? `/api/vocabulary/all-words-for-review?limit=${limit}`
-        : `/api/words/for-review?limit=${limit}`;
+        ? `/api/vocabulary/all-words-for-review?userId=default_user&limit=${limit}`
+        : `/api/vocabulary/words-for-review?userId=default_user&limit=${limit}`;
         
       const response = await fetch(endpoint, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch words for review");
