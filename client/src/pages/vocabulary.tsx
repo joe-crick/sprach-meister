@@ -134,14 +134,22 @@ export default function Vocabulary() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === "text/csv") {
-      uploadCsvMutation.mutate(file);
-    } else {
-      toast({
-        title: "Error",
-        description: "Please select a valid CSV file",
-        variant: "destructive",
-      });
+    if (file) {
+      // Accept .csv files and also allow text/plain which some systems use for CSV
+      const isValidCsv = file.type === "text/csv" || 
+                        file.type === "application/vnd.ms-excel" ||
+                        file.type === "text/plain" ||
+                        file.name.toLowerCase().endsWith('.csv');
+      
+      if (isValidCsv) {
+        uploadCsvMutation.mutate(file);
+      } else {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a CSV file (.csv extension)",
+          variant: "destructive",
+        });
+      }
     }
     // Reset file input
     if (fileInputRef.current) {

@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/vocabulary/cleanup-duplicates", async (req, res) => {
     try {
       const words = await storage.getVocabularyWords();
-      const duplicateMap = new Map<string, VocabularyWord[]>();
+      const duplicateMap = new Map<string, VocabularyWordWithProgress[]>();
       
       // Group words by lowercase German word
       words.forEach(word => {
@@ -685,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           enableNotifications: true,
           language: "english",
           reminderTime: "18:00",
-          enableWhatsappReminders: false
+          enableSmsReminders: false
         });
       }
       
@@ -817,7 +817,7 @@ Viel Erfolg beim Deutschlernen! 🇩🇪`;
           
         } catch (apiError) {
           console.error(`${service.name} API error:`, apiError);
-          lastError = apiError.message;
+          lastError = (apiError as Error).message;
         }
       }
       
