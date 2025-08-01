@@ -10,7 +10,7 @@ import { UserSettings } from "@shared/schema";
 import { useTranslation, Language } from "@/lib/translations";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ReactMarkdown from "react-markdown";
-import LoadingSpinner from "@lib/loading-spinner";
+import LoadingSpinner from "@/lib/loading-spinner";
 
 export default function Grammar() {
   const [grammarTopic, setGrammarTopic] = useState("");
