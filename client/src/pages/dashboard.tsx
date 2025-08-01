@@ -145,8 +145,8 @@ export default function Dashboard() {
 
           <Card className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
             <CardContent className="p-6">
-              <h3 className="text-xl font-semibold mb-2">Practice All Words</h3>
-              <p className="text-purple-100 mb-4">Review any words whenever you want</p>
+              <h3 className="text-xl font-semibold mb-2">Practice Learned Words</h3>
+              <p className="text-purple-100 mb-4">Review your learned vocabulary anytime</p>
               <Link href="/review?mode=all">
                 <Button className="bg-white text-purple-600 hover:bg-purple-50">
                   Start Practice

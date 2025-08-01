@@ -59,6 +59,15 @@ export default function ReviewExercise({ word, onAnswer, onNext }: ReviewExercis
     if (showFeedback) return; // Prevent selection after feedback is shown
 
     setSelectedAnswer(answer);
+    
+    // Get correct answer based on exercise type
+    let correctAnswer: string;
+    if (exerciseType === "article") {
+      correctAnswer = word.article || "";
+    } else {
+      correctAnswer = word.english;
+    }
+    
     const isCorrect = answer === correctAnswer;
     setAnswerState(isCorrect ? "correct" : "incorrect");
     setShowFeedback(true);
