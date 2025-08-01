@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/vocabulary/cleanup-duplicates", async (req, res) => {
     try {
       const words = await storage.getVocabularyWords();
-      const duplicateMap = new Map<string, VocabularyWordWithProgress[]>();
+      const duplicateMap = new Map<string, any[]>();
       
       // Group words by lowercase German word
       words.forEach(word => {
@@ -96,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!duplicateMap.has(key)) {
           duplicateMap.set(key, []);
         }
-        duplicateMap.get(key)!.push(word as any);
+        duplicateMap.get(key)!.push(word);
       });
       
       let duplicatesRemoved = 0;
@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: `Cleaned up ${duplicatesRemoved} duplicate words` });
     } catch (error) {
-      res.status(500).json({ message: "Failed to cleanup duplicates" });
+      res.status(500).json({ message: "Failed to cleanup duplicates", error: (error as Error).message });
     }
   });
 

@@ -132,6 +132,32 @@ export default function Vocabulary() {
     }
   });
 
+  const cleanupDuplicatesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/vocabulary/cleanup-duplicates", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to cleanup duplicates");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vocabulary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Cleanup Complete",
+        description: data.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cleanup Failed",
+        description: error.message || "Failed to remove duplicates",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -313,6 +339,20 @@ export default function Vocabulary() {
               >
                 <Brain className="mr-2 h-4 w-4" />
                 {isGenerating ? "Generating..." : "AI Word Discovery"}
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  if (confirm("This will remove duplicate words from your vocabulary. Are you sure?")) {
+                    cleanupDuplicatesMutation.mutate();
+                  }
+                }}
+                disabled={cleanupDuplicatesMutation.isPending}
+                variant="outline"
+                className="flex-1"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                {cleanupDuplicatesMutation.isPending ? "Cleaning..." : "Remove Duplicates"}
               </Button>
             </div>
           </CardContent>
