@@ -176,8 +176,6 @@ export default function SentencePractice() {
   };
 
   // Generate initial exercise on component mount
-  // This useEffect ensures an exercise is loaded when the component first mounts, but
-  // not on subsequent re-renders unless learnedWords changes.
   useEffect(() => {
     if (learnedWords && learnedWords.length >= 4 && !currentExercise) {
       handleGenerateNewExercise();
@@ -191,11 +189,10 @@ export default function SentencePractice() {
     }
     generateExerciseMutation.mutate(config);
   };
-
+  
+  // This function now only updates the state and does not trigger a new exercise
   const handleSetExerciseMode = (mode: "vocabulary" | "grammar") => {
     setExerciseMode(mode);
-    // Explicitly generate a new exercise when the mode changes
-    handleGenerateNewExercise();
   };
 
   if (wordsLoading) {
